@@ -1,5 +1,3 @@
-export type Thing = { a: 1 };
-
 export type PointStyle =
   | "circle"
   | "crossRot"
@@ -15,17 +13,31 @@ export declare function renderMap<
   canvas: any,
   chroma: any,
   data: {
-    popUint8: Uint8Array;
+    pixPopUint8: Uint8Array;
     facLocations: Int32Array;
-    facValues: T[];
+    pixNearestFacNumber?: Int32Array;
+    pixNearestFacDistance?: Float32Array;
+    facValues?: T[];
     facTypes?: U[];
   },
   helpers: {
-    getPointStyleFromFacValue?: (v: T, t: U | undefined) => PointStyle;
-    getPointColorFromFacValue?: (v: T, t: U | undefined) => string;
+    getPixelColor?: (
+      pixNearestFacDistance: number | undefined,
+      facValue: T | undefined,
+      facType: U | undefined
+    ) => string | undefined;
+    getPointStyle?: (
+      facValue: T | undefined,
+      facType: U | undefined
+    ) => PointStyle;
+    getPointColor?: (facValue: T | undefined, facType: U | undefined) => string;
+    getPointRadius?: (
+      facValue: T | undefined,
+      facType: U | undefined
+    ) => number;
   },
   opts: {
-    popColor: string;
+    defaultPopColor: string;
     mapPixelW: number;
     mapPixelH: number;
     mapPixelPad: number;

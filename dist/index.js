@@ -140,42 +140,94 @@ function renderMap(canvas, chroma, data, helpers, opts) {
   console.log("Rendering map x", canvas.width, canvas.height);
   const ctx = canvas.getContext("2d");
   const imageData = ctx.createImageData(opts.mapPixelW, opts.mapPixelH);
-  if (data.popUint8.length !== imageData.width * imageData.height) {
-    throw new Error("PopUint8 not same length as canvas");
+  const nFacilities = data.facLocations.length / 2;
+  if (data.pixPopUint8.length !== imageData.width * imageData.height) {
+    throw new Error("pixPopUint8 not same length as canvas");
   }
-  if (data.facLocations.length !== data.facValues.length * 2) {
+  if (
+    data.facValues &&
+    data.facValues.length * 2 !== data.facLocations.length
+  ) {
     throw new Error("facLocations not twice the length of facValues");
   }
-  const popColorRgb = chroma(opts.popColor).rgba();
-  for (let iPix = 0; iPix < data.popUint8.length; iPix++) {
-    if (data.popUint8[iPix] === 255) {
-      continue;
+  if (
+    data.pixNearestFacNumber &&
+    data.pixNearestFacNumber.length !== data.pixPopUint8.length
+  ) {
+    throw new Error("pixNearestFacNumber not equal to pixPopUint8");
+  }
+  if (
+    data.pixNearestFacDistance &&
+    data.pixNearestFacDistance.length !== data.pixPopUint8.length
+  ) {
+    throw new Error("pixNearestFacDistance not equal to pixPopUint8");
+  }
+  if (helpers.getPixelColor) {
+    const colorMap = {};
+    for (let iPix = 0; iPix < data.pixPopUint8.length; iPix++) {
+      if (data.pixPopUint8[iPix] === 255) {
+        continue;
+      }
+      const nearestFacDistance = data.pixNearestFacDistance?.[iPix];
+      const nearestFacNumber = data.pixNearestFacNumber?.[iPix];
+      if (
+        nearestFacNumber &&
+        (nearestFacNumber < 1 || nearestFacNumber > nFacilities)
+      ) {
+        throw new Error("Bad nearest fac number");
+      }
+      const { facValue, facType } = getFacValueAndType(data, nearestFacNumber);
+      const color =
+        helpers.getPixelColor(nearestFacDistance, facValue, facType) ??
+        opts.defaultPopColor;
+      if (!colorMap[color]) {
+        colorMap[color] = chroma(color).rgba();
+      }
+      const rgb = colorMap[color];
+      const iImgData = iPix * 4;
+      imageData.data[iImgData + 0] = rgb[0];
+      imageData.data[iImgData + 1] = rgb[1];
+      imageData.data[iImgData + 2] = rgb[2];
+      imageData.data[iImgData + 3] = data.pixPopUint8[iPix];
     }
-    const iImgData = iPix * 4;
-    imageData.data[iImgData + 0] = popColorRgb[0];
-    imageData.data[iImgData + 1] = popColorRgb[1];
-    imageData.data[iImgData + 2] = popColorRgb[2];
-    imageData.data[iImgData + 3] = data.popUint8[iPix];
+  } else {
+    const defaultPopColorRgb = chroma(opts.defaultPopColor).rgba();
+    for (let iPix = 0; iPix < data.pixPopUint8.length; iPix++) {
+      if (data.pixPopUint8[iPix] === 255) {
+        continue;
+      }
+      const iImgData = iPix * 4;
+      imageData.data[iImgData + 0] = defaultPopColorRgb[0];
+      imageData.data[iImgData + 1] = defaultPopColorRgb[1];
+      imageData.data[iImgData + 2] = defaultPopColorRgb[2];
+      imageData.data[iImgData + 3] = data.pixPopUint8[iPix];
+    }
   }
   ctx.putImageData(imageData, opts.mapPixelPad, opts.mapPixelPad);
   const nFacs = data.facLocations.length / 2;
   for (let iFac = 0; iFac < nFacs; iFac++) {
     const facX = data.facLocations[iFac * 2];
     const facY = data.facLocations[iFac * 2 + 1];
-    const facV = data.facValues[iFac];
+    const facValue = data.facValues?.[iFac];
     const facType = data.facTypes?.[iFac];
     addPoint(
       ctx,
-      helpers.getPointStyleFromFacValue?.(facV, facType) ?? "circle",
+      helpers.getPointStyle?.(facValue, facType) ?? "circle",
       facX + opts.mapPixelPad,
       facY + opts.mapPixelPad,
-      10,
-      helpers.getPointColorFromFacValue?.(facV, facType) ?? "blue",
+      helpers.getPointRadius?.(facValue, facType) ?? 10,
+      helpers.getPointColor?.(facValue, facType) ?? "blue",
       3,
       chroma
     );
   }
 }
-export {
-  renderMap
-};
+function getFacValueAndType(data, nearestFacNumber) {
+  if (nearestFacNumber === void 0) {
+    return { facValue: void 0, facType: void 0 };
+  }
+  const facValue = data.facValues?.[nearestFacNumber - 1];
+  const facType = data.facTypes?.[nearestFacNumber - 1];
+  return { facValue, facType };
+}
+export { renderMap };
