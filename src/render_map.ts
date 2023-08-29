@@ -1,18 +1,21 @@
 import { PointStyle, addPoint } from "./add_points.ts";
 import { Canvas, chroma } from "./deps.ts";
 
-export function renderMap<T extends number | string>(
+export function renderMap<T extends number | string, U extends number | string>(
   canvas: Canvas,
   chroma: chroma,
   data: {
     popUint8: Uint8Array;
     facLocations: Int32Array;
     facValues: T[];
+    facTypes?: U[];
   },
   helpers: {
-    getPointStyleFromFacValue: (v: T) => PointStyle;
+    getPointStyleFromFacValue?: (v: T, t: U | undefined) => PointStyle;
+    getPointColorFromFacValue?: (v: T, t: U | undefined) => string;
   },
   opts: {
+    popColor: string;
     mapPixelW: number;
     mapPixelH: number;
     mapPixelPad: number;
@@ -31,7 +34,7 @@ export function renderMap<T extends number | string>(
     throw new Error("facLocations not twice the length of facValues");
   }
 
-  const popColorRgb = [240, 34, 156, 140];
+  const popColorRgb = chroma(opts.popColor).rgba();
 
   for (let iPix = 0; iPix < data.popUint8.length; iPix++) {
     if (data.popUint8[iPix] === 255) {
@@ -51,13 +54,14 @@ export function renderMap<T extends number | string>(
     const facX = data.facLocations[iFac * 2];
     const facY = data.facLocations[iFac * 2 + 1];
     const facV = data.facValues[iFac];
+    const facType = data.facTypes?.[iFac];
     addPoint(
       ctx,
-      helpers.getPointStyleFromFacValue(facV),
+      helpers.getPointStyleFromFacValue?.(facV, facType) ?? "circle",
       facX + opts.mapPixelPad,
       facY + opts.mapPixelPad,
       10,
-      "blue",
+      helpers.getPointColorFromFacValue?.(facV, facType) ?? "blue",
       3,
       chroma
     );

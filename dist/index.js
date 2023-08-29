@@ -146,7 +146,7 @@ function renderMap(canvas, chroma, data, helpers, opts) {
   if (data.facLocations.length !== data.facValues.length * 2) {
     throw new Error("facLocations not twice the length of facValues");
   }
-  const popColorRgb = [240, 34, 156, 140];
+  const popColorRgb = chroma(opts.popColor).rgba();
   for (let iPix = 0; iPix < data.popUint8.length; iPix++) {
     if (data.popUint8[iPix] === 255) {
       continue;
@@ -163,13 +163,14 @@ function renderMap(canvas, chroma, data, helpers, opts) {
     const facX = data.facLocations[iFac * 2];
     const facY = data.facLocations[iFac * 2 + 1];
     const facV = data.facValues[iFac];
+    const facType = data.facTypes?.[iFac];
     addPoint(
       ctx,
-      helpers.getPointStyleFromFacValue(facV),
+      helpers.getPointStyleFromFacValue?.(facV, facType) ?? "circle",
       facX + opts.mapPixelPad,
       facY + opts.mapPixelPad,
       10,
-      "blue",
+      helpers.getPointColorFromFacValue?.(facV, facType) ?? "blue",
       3,
       chroma
     );
