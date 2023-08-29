@@ -8,12 +8,14 @@ export type PointStyle =
 
 export declare function renderMap<
   T extends number | string,
-  U extends number | string
+  U extends number | string,
+  R
 >(
   canvas: any,
   chroma: any,
   data: {
     pixPopUint8: Uint8Array;
+    pixPopFloat32?: Float32Array;
     facLocations: Int32Array;
     pixNearestFacNumber?: Int32Array;
     pixNearestFacDistance?: Float32Array;
@@ -21,10 +23,25 @@ export declare function renderMap<
     facTypes?: U[];
   },
   helpers: {
+    results?: {
+      startingObject: R;
+      popAccumulator: (
+        currentObject: R,
+        pop: number,
+        nearestFacDistance: number | undefined,
+        nearestFacValue: T | undefined,
+        nearestFacType: U | undefined
+      ) => void;
+      facAccumulator: (
+        currentObject: R,
+        facValue: T | undefined,
+        facType: U | undefined
+      ) => void;
+    };
     getPixelColor?: (
-      pixNearestFacDistance: number | undefined,
-      facValue: T | undefined,
-      facType: U | undefined
+      nearestFacDistance: number | undefined,
+      nearestFacValue: T | undefined,
+      nearestFacType: U | undefined
     ) => string | undefined;
     getPointStyle?: (
       facValue: T | undefined,
@@ -38,8 +55,12 @@ export declare function renderMap<
   },
   opts: {
     defaultPopColor: string;
+    defaultFacPointColor: string;
+    defaultFacPointStyle: PointStyle;
+    defaultFacPointRadius: number;
+    defaultFacPointStrokeWidth: number;
     mapPixelW: number;
     mapPixelH: number;
     mapPixelPad: number;
   }
-): void;
+): R | undefined;
