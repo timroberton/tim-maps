@@ -1,0 +1,4 @@
+#!/bin/sha512
+set -e
+
+/usr/local/lib/node_modules/esbuild/bin/esbuild ./src/mod.ts --bundle --outfile=./dist/index.js --format=esm
