@@ -14,18 +14,27 @@ export type RenderMapData<
   facTypes?: FacType[];
   pixNearestFacNumber?: Int32Array;
   pixNearestFacDistance?: Float32Array;
-  // Adm 1
+  // Adm1
   pixAdm1Index?: Uint8Array;
   adm1Values?: Adm1Value[];
 };
 
 export type PixelVals<FacValue, FacType extends number | string, Adm1Value> = {
   popFloat32?: number;
+  // Fac
+  nearestFacIndex?: number;
   nearestFacDistance?: number;
   nearestFacValue?: FacValue;
   nearestFacType?: FacType;
+  // Adm1
   adm1Index?: number;
   adm1Value?: Adm1Value;
+};
+
+export type FacVals<FacValue, FacType extends number | string> = {
+  // Fac
+  facValue?: FacValue;
+  facType?: FacType;
 };
 
 export function renderMap<
@@ -46,27 +55,14 @@ export function renderMap<
       ) => void;
       facAccumulator: (
         currentObject: ResutsObject,
-        facValue: FacValue | undefined,
-        facType: FacType | undefined
+        vals: FacVals<FacValue, FacType>
       ) => void;
     };
     getPixelColor?: (vals: PixelVals<FacValue, FacType, Adm1Value>) => string;
-    getPointColor?: (
-      facValue: FacValue | undefined,
-      facType: FacType | undefined
-    ) => string;
-    getPointStyle?: (
-      facValue: FacValue | undefined,
-      facType: FacType | undefined
-    ) => PointStyle;
-    getPointRadius?: (
-      facValue: FacValue | undefined,
-      facType: FacType | undefined
-    ) => number;
-    getPointStrokeWidth?: (
-      facValue: FacValue | undefined,
-      facType: FacType | undefined
-    ) => number;
+    getPointColor?: (vals: FacVals<FacValue, FacType>) => string;
+    getPointStyle?: (vals: FacVals<FacValue, FacType>) => PointStyle;
+    getPointRadius?: (vals: FacVals<FacValue, FacType>) => number;
+    getPointStrokeWidth?: (vals: FacVals<FacValue, FacType>) => number;
   },
   opts: {
     pixelColor?: string;
@@ -80,11 +76,20 @@ export function renderMap<
   }
 ): ResutsObject | undefined {
   const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   const imageData = ctx.createImageData(opts.mapPixelW, opts.mapPixelH);
 
   const nPixels = data.pixPopUint8.length;
   const nFacilities = (data.facLocations?.length ?? 0) / 2;
 
+  const colorMap: Record<string, [number, number, number]> = {};
+  const resultsObject: ResutsObject = structuredClone(
+    helpers.results?.startingObject ?? {}
+  );
+
+  ////////////////////////////////////
+  //////////// Validation ////////////
+  ////////////////////////////////////
   if (nPixels !== imageData.width * imageData.height) {
     throw new Error("pixPopUint8 not same length as canvas");
   }
@@ -118,40 +123,72 @@ export function renderMap<
   if (!helpers.getPointStrokeWidth && opts.pointStrokeWidth === undefined) {
     throw new Error("At least one pointStrokeWidth opt needs to be defined");
   }
+  if (data.pixNearestFacNumber) {
+    let minFacIndex = Number.POSITIVE_INFINITY;
+    let maxFacIndex = Number.NEGATIVE_INFINITY;
+    data.pixNearestFacNumber.forEach((v) => {
+      minFacIndex = Math.min(v - 1, minFacIndex);
+      maxFacIndex = Math.max(v - 1, maxFacIndex);
+    });
+    if (minFacIndex < 0 || minFacIndex > nFacilities - 1) {
+      throw new Error("Bad nearest fac number");
+    }
+    if (maxFacIndex < 0 || maxFacIndex > nFacilities - 1) {
+      throw new Error("Bad nearest fac number");
+    }
+  }
+  if (data.pixNearestFacNumber) {
+    let minFacIndex = Number.POSITIVE_INFINITY;
+    let maxFacIndex = Number.NEGATIVE_INFINITY;
+    data.pixNearestFacNumber.forEach((v) => {
+      minFacIndex = Math.min(v - 1, minFacIndex);
+      maxFacIndex = Math.max(v - 1, maxFacIndex);
+    });
+    if (minFacIndex < 0 || minFacIndex > nFacilities - 1) {
+      throw new Error("Bad nearest fac number");
+    }
+    if (maxFacIndex < 0 || maxFacIndex > nFacilities - 1) {
+      throw new Error("Bad nearest fac number");
+    }
+  }
+  ////////////////////////////////////
+  ////////////////////////////////////
+  ////////////////////////////////////
 
-  const colorMap: Record<string, [number, number, number]> = {};
-  const resultsObject: ResutsObject = structuredClone(
-    helpers.results?.startingObject ?? {}
-  );
-
-  for (let iPix = 0; iPix < data.pixPopUint8.length; iPix++) {
+  for (let iPix = 0; iPix < nPixels; iPix++) {
     if (data.pixPopUint8[iPix] === 255) {
       continue;
     }
-    const nearestFacNumber = data.pixNearestFacNumber?.[iPix];
-    if (
-      nearestFacNumber &&
-      (nearestFacNumber < 1 || nearestFacNumber > nFacilities)
-    ) {
-      throw new Error("Bad nearest fac number");
-    }
-    const { facValue, facType } = getFacValueAndType(data, nearestFacNumber);
+    const nearestFacIndex = data.pixNearestFacNumber
+      ? data.pixNearestFacNumber[iPix] - 1
+      : undefined;
+    const adm1Index = data.pixAdm1Index?.[iPix];
     const vals: PixelVals<FacValue, FacType, Adm1Value> = {
       popFloat32: data.pixPopFloat32?.[iPix],
-      adm1Index: data.pixAdm1Index?.[iPix],
+      // Fac
+      nearestFacIndex,
       nearestFacDistance: data.pixNearestFacDistance?.[iPix],
-      nearestFacValue: facValue,
-      nearestFacType: facType,
+      nearestFacValue:
+        nearestFacIndex !== undefined
+          ? data.facValues?.[nearestFacIndex]
+          : undefined,
+      nearestFacType:
+        nearestFacIndex !== undefined
+          ? data.facTypes?.[nearestFacIndex]
+          : undefined,
+      // Adm 1
+      adm1Index: data.pixAdm1Index?.[iPix],
+      adm1Value:
+        adm1Index !== undefined ? data.adm1Values?.[adm1Index] : undefined,
     };
     const color = helpers.getPixelColor?.(vals) ?? opts.pixelColor ?? "#000000";
     if (!colorMap[color]) {
       colorMap[color] = chroma(color).rgba();
     }
-    const rgb = colorMap[color];
     const iImgData = iPix * 4;
-    imageData.data[iImgData + 0] = rgb[0];
-    imageData.data[iImgData + 1] = rgb[1];
-    imageData.data[iImgData + 2] = rgb[2];
+    imageData.data[iImgData + 0] = colorMap[color][0];
+    imageData.data[iImgData + 1] = colorMap[color][1];
+    imageData.data[iImgData + 2] = colorMap[color][2];
     imageData.data[iImgData + 3] = data.pixPopUint8[iPix];
     helpers.results?.popAccumulator(resultsObject, vals);
   }
@@ -162,45 +199,23 @@ export function renderMap<
     for (let iFac = 0; iFac < nFacilities; iFac++) {
       const facX = data.facLocations[iFac * 2];
       const facY = data.facLocations[iFac * 2 + 1];
-      const facValue = data.facValues?.[iFac];
-      const facType = data.facTypes?.[iFac];
+      const vals: FacVals<FacValue, FacType> = {
+        facValue: data.facValues?.[iFac],
+        facType: data.facTypes?.[iFac],
+      };
       addPoint(
         ctx,
-        helpers.getPointStyle?.(facValue, facType) ??
-          opts.pointStyle ??
-          "circle",
+        helpers.getPointStyle?.(vals) ?? opts.pointStyle ?? "circle",
         facX + opts.mapPixelPad,
         facY + opts.mapPixelPad,
-        helpers.getPointRadius?.(facValue, facType) ?? opts.pointRadius ?? 10,
-        helpers.getPointColor?.(facValue, facType) ??
-          opts.pointColor ??
-          "#000000",
+        helpers.getPointRadius?.(vals) ?? opts.pointRadius ?? 10,
+        helpers.getPointColor?.(vals) ?? opts.pointColor ?? "#000000",
         opts.pointStrokeWidth ?? 3,
         chroma
       );
-      helpers.results?.facAccumulator(resultsObject, facValue, facType);
+      helpers.results?.facAccumulator(resultsObject, vals);
     }
   }
 
   return resultsObject;
-}
-
-///////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////
-
-function getFacValueAndType<
-  FacValue,
-  FacType extends number | string,
-  Adm1Value
->(
-  data: RenderMapData<FacValue, FacType, Adm1Value>,
-  nearestFacNumber: number | undefined
-): { facValue: FacValue | undefined; facType: FacType | undefined } {
-  if (nearestFacNumber === undefined) {
-    return { facValue: undefined, facType: undefined };
-  }
-  const facValue = data.facValues?.[nearestFacNumber - 1];
-  const facType = data.facTypes?.[nearestFacNumber - 1];
-  return { facValue, facType };
 }

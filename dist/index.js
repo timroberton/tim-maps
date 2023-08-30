@@ -138,9 +138,14 @@ function drawTriangle(ctx, x, y, radius, fill, stroke, strokeWidth) {
 // src/render_map.ts
 function renderMap(canvas, chroma, data, helpers, opts) {
   const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   const imageData = ctx.createImageData(opts.mapPixelW, opts.mapPixelH);
   const nPixels = data.pixPopUint8.length;
   const nFacilities = (data.facLocations?.length ?? 0) / 2;
+  const colorMap = {};
+  const resultsObject = structuredClone(
+    helpers.results?.startingObject ?? {}
+  );
   if (nPixels !== imageData.width * imageData.height) {
     throw new Error("pixPopUint8 not same length as canvas");
   }
@@ -166,40 +171,64 @@ function renderMap(canvas, chroma, data, helpers, opts) {
     throw new Error("At least one pointStyle opt needs to be defined");
   }
   if (!helpers.getPointRadius && opts.pointRadius === void 0) {
-    throw new Error("At least one pixelColor opt needs to be defined");
+    throw new Error("At least one pointRadius opt needs to be defined");
   }
   if (!helpers.getPointStrokeWidth && opts.pointStrokeWidth === void 0) {
     throw new Error("At least one pointStrokeWidth opt needs to be defined");
   }
-  const colorMap = {};
-  const resultsObject = structuredClone(
-    helpers.results?.startingObject ?? {}
-  );
-  for (let iPix = 0; iPix < data.pixPopUint8.length; iPix++) {
+  if (data.pixNearestFacNumber) {
+    let minFacIndex = Number.POSITIVE_INFINITY;
+    let maxFacIndex = Number.NEGATIVE_INFINITY;
+    data.pixNearestFacNumber.forEach((v) => {
+      minFacIndex = Math.min(v - 1, minFacIndex);
+      maxFacIndex = Math.max(v - 1, maxFacIndex);
+    });
+    if (minFacIndex < 0 || minFacIndex > nFacilities - 1) {
+      throw new Error("Bad nearest fac number");
+    }
+    if (maxFacIndex < 0 || maxFacIndex > nFacilities - 1) {
+      throw new Error("Bad nearest fac number");
+    }
+  }
+  if (data.pixNearestFacNumber) {
+    let minFacIndex = Number.POSITIVE_INFINITY;
+    let maxFacIndex = Number.NEGATIVE_INFINITY;
+    data.pixNearestFacNumber.forEach((v) => {
+      minFacIndex = Math.min(v - 1, minFacIndex);
+      maxFacIndex = Math.max(v - 1, maxFacIndex);
+    });
+    if (minFacIndex < 0 || minFacIndex > nFacilities - 1) {
+      throw new Error("Bad nearest fac number");
+    }
+    if (maxFacIndex < 0 || maxFacIndex > nFacilities - 1) {
+      throw new Error("Bad nearest fac number");
+    }
+  }
+  for (let iPix = 0; iPix < nPixels; iPix++) {
     if (data.pixPopUint8[iPix] === 255) {
       continue;
     }
-    const nearestFacNumber = data.pixNearestFacNumber?.[iPix];
-    if (nearestFacNumber && (nearestFacNumber < 1 || nearestFacNumber > nFacilities)) {
-      throw new Error("Bad nearest fac number");
-    }
-    const { facValue, facType } = getFacValueAndType(data, nearestFacNumber);
+    const nearestFacIndex = data.pixNearestFacNumber ? data.pixNearestFacNumber[iPix] - 1 : void 0;
+    const adm1Index = data.pixAdm1Index?.[iPix];
     const vals = {
       popFloat32: data.pixPopFloat32?.[iPix],
-      adm1Index: data.pixAdm1Index?.[iPix],
+      // Fac
+      nearestFacIndex,
       nearestFacDistance: data.pixNearestFacDistance?.[iPix],
-      nearestFacValue: facValue,
-      nearestFacType: facType
+      nearestFacValue: nearestFacIndex !== void 0 ? data.facValues?.[nearestFacIndex] : void 0,
+      nearestFacType: nearestFacIndex !== void 0 ? data.facTypes?.[nearestFacIndex] : void 0,
+      // Adm 1
+      adm1Index: data.pixAdm1Index?.[iPix],
+      adm1Value: adm1Index !== void 0 ? data.adm1Values?.[adm1Index] : void 0
     };
     const color = helpers.getPixelColor?.(vals) ?? opts.pixelColor ?? "#000000";
     if (!colorMap[color]) {
       colorMap[color] = chroma(color).rgba();
     }
-    const rgb = colorMap[color];
     const iImgData = iPix * 4;
-    imageData.data[iImgData + 0] = rgb[0];
-    imageData.data[iImgData + 1] = rgb[1];
-    imageData.data[iImgData + 2] = rgb[2];
+    imageData.data[iImgData + 0] = colorMap[color][0];
+    imageData.data[iImgData + 1] = colorMap[color][1];
+    imageData.data[iImgData + 2] = colorMap[color][2];
     imageData.data[iImgData + 3] = data.pixPopUint8[iPix];
     helpers.results?.popAccumulator(resultsObject, vals);
   }
@@ -208,30 +237,24 @@ function renderMap(canvas, chroma, data, helpers, opts) {
     for (let iFac = 0; iFac < nFacilities; iFac++) {
       const facX = data.facLocations[iFac * 2];
       const facY = data.facLocations[iFac * 2 + 1];
-      const facValue = data.facValues?.[iFac];
-      const facType = data.facTypes?.[iFac];
+      const vals = {
+        facValue: data.facValues?.[iFac],
+        facType: data.facTypes?.[iFac]
+      };
       addPoint(
         ctx,
-        helpers.getPointStyle?.(facValue, facType) ?? opts.pointStyle ?? "circle",
+        helpers.getPointStyle?.(vals) ?? opts.pointStyle ?? "circle",
         facX + opts.mapPixelPad,
         facY + opts.mapPixelPad,
-        helpers.getPointRadius?.(facValue, facType) ?? opts.pointRadius ?? 10,
-        helpers.getPointColor?.(facValue, facType) ?? opts.pointColor ?? "#000000",
+        helpers.getPointRadius?.(vals) ?? opts.pointRadius ?? 10,
+        helpers.getPointColor?.(vals) ?? opts.pointColor ?? "#000000",
         opts.pointStrokeWidth ?? 3,
         chroma
       );
-      helpers.results?.facAccumulator(resultsObject, facValue, facType);
+      helpers.results?.facAccumulator(resultsObject, vals);
     }
   }
   return resultsObject;
-}
-function getFacValueAndType(data, nearestFacNumber) {
-  if (nearestFacNumber === void 0) {
-    return { facValue: void 0, facType: void 0 };
-  }
-  const facValue = data.facValues?.[nearestFacNumber - 1];
-  const facType = data.facTypes?.[nearestFacNumber - 1];
-  return { facValue, facType };
 }
 export {
   renderMap

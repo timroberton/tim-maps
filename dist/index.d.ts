@@ -19,16 +19,25 @@ export type RenderMapData<
   facTypes?: FacType[];
   pixNearestFacNumber?: Int32Array;
   pixNearestFacDistance?: Float32Array;
-  // Adm 1
+  // Adm1
   pixAdm1Index?: Uint8Array;
   adm1Values?: Adm1Value[];
 };
 
+export type FacVals<FacValue, FacType extends number | string> = {
+  // Fac
+  facValue?: FacValue;
+  facType?: FacType;
+};
+
 export type PixelVals<FacValue, FacType extends number | string, Adm1Value> = {
   popFloat32?: number;
+  // Fac
+  nearestFacIndex?: number;
   nearestFacDistance?: number;
   nearestFacValue?: FacValue;
   nearestFacType?: FacType;
+  // Adm1
   adm1Index?: number;
   adm1Value?: Adm1Value;
 };
@@ -51,27 +60,14 @@ export declare function renderMap<
       ) => void;
       facAccumulator: (
         currentObject: ResutsObject,
-        facValue: FacValue | undefined,
-        facType: FacType | undefined
+        vals: FacVals<FacValue, FacType>
       ) => void;
     };
     getPixelColor?: (vals: PixelVals<FacValue, FacType, Adm1Value>) => string;
-    getPointColor?: (
-      facValue: FacValue | undefined,
-      facType: FacType | undefined
-    ) => string;
-    getPointStyle?: (
-      facValue: FacValue | undefined,
-      facType: FacType | undefined
-    ) => PointStyle;
-    getPointRadius?: (
-      facValue: FacValue | undefined,
-      facType: FacType | undefined
-    ) => number;
-    getPointStrokeWidth?: (
-      facValue: FacValue | undefined,
-      facType: FacType | undefined
-    ) => number;
+    getPointColor?: (vals: FacVals<FacValue, FacType>) => string;
+    getPointStyle?: (vals: FacVals<FacValue, FacType>) => PointStyle;
+    getPointRadius?: (vals: FacVals<FacValue, FacType>) => number;
+    getPointStrokeWidth?: (vals: FacVals<FacValue, FacType>) => number;
   },
   opts: {
     pixelColor?: string;
