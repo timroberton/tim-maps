@@ -6,61 +6,81 @@ export type PointStyle =
   | "rect"
   | "triangle";
 
+export type RenderMapData<
+  FacValue,
+  FacType extends number | string,
+  Adm1Value
+> = {
+  pixPopUint8: Uint8Array;
+  pixPopFloat32?: Float32Array;
+  // Facs
+  facLocations?: Int32Array;
+  facValues?: FacValue[];
+  facTypes?: FacType[];
+  pixNearestFacNumber?: Int32Array;
+  pixNearestFacDistance?: Float32Array;
+  // Adm 1
+  pixAdm1Index?: Uint8Array;
+  adm1Values?: Adm1Value[];
+};
+
+export type PixelVals<FacValue, FacType extends number | string, Adm1Value> = {
+  popFloat32?: number;
+  nearestFacDistance?: number;
+  nearestFacValue?: FacValue;
+  nearestFacType?: FacType;
+  adm1Index?: number;
+  adm1Value?: Adm1Value;
+};
+
 export declare function renderMap<
-  T extends number | string,
-  U extends number | string,
-  R
+  FacValue,
+  FacType extends number | string,
+  Adm1Value,
+  ResutsObject
 >(
   canvas: any,
   chroma: any,
-  data: {
-    pixPopUint8: Uint8Array;
-    pixPopFloat32?: Float32Array;
-    facLocations: Int32Array;
-    pixNearestFacNumber?: Int32Array;
-    pixNearestFacDistance?: Float32Array;
-    facValues?: T[];
-    facTypes?: U[];
-  },
+  data: RenderMapData<FacValue, FacType, Adm1Value>,
   helpers: {
     results?: {
-      startingObject: R;
+      startingObject: ResutsObject;
       popAccumulator: (
-        currentObject: R,
-        pop: number,
-        nearestFacDistance: number | undefined,
-        nearestFacValue: T | undefined,
-        nearestFacType: U | undefined
+        currentObject: ResutsObject,
+        vals: PixelVals<FacValue, FacType, Adm1Value>
       ) => void;
       facAccumulator: (
-        currentObject: R,
-        facValue: T | undefined,
-        facType: U | undefined
+        currentObject: ResutsObject,
+        facValue: FacValue | undefined,
+        facType: FacType | undefined
       ) => void;
     };
-    getPixelColor?: (
-      nearestFacDistance: number | undefined,
-      nearestFacValue: T | undefined,
-      nearestFacType: U | undefined
-    ) => string | undefined;
+    getPixelColor?: (vals: PixelVals<FacValue, FacType, Adm1Value>) => string;
+    getPointColor?: (
+      facValue: FacValue | undefined,
+      facType: FacType | undefined
+    ) => string;
     getPointStyle?: (
-      facValue: T | undefined,
-      facType: U | undefined
+      facValue: FacValue | undefined,
+      facType: FacType | undefined
     ) => PointStyle;
-    getPointColor?: (facValue: T | undefined, facType: U | undefined) => string;
     getPointRadius?: (
-      facValue: T | undefined,
-      facType: U | undefined
+      facValue: FacValue | undefined,
+      facType: FacType | undefined
+    ) => number;
+    getPointStrokeWidth?: (
+      facValue: FacValue | undefined,
+      facType: FacType | undefined
     ) => number;
   },
   opts: {
-    defaultPopColor: string;
-    defaultFacPointColor: string;
-    defaultFacPointStyle: PointStyle;
-    defaultFacPointRadius: number;
-    defaultFacPointStrokeWidth: number;
+    pixelColor?: string;
+    pointColor?: string;
+    pointStyle?: PointStyle;
+    pointRadius?: number;
+    pointStrokeWidth?: number;
     mapPixelW: number;
     mapPixelH: number;
     mapPixelPad: number;
   }
-): R | undefined;
+): ResutsObject | undefined;

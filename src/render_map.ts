@@ -1,69 +1,89 @@
 import { PointStyle, addPoint } from "./add_points.ts";
 import { Canvas, chroma } from "./deps.ts";
 
+export type RenderMapData<
+  FacValue,
+  FacType extends number | string,
+  Adm1Value
+> = {
+  pixPopUint8: Uint8Array;
+  pixPopFloat32?: Float32Array;
+  // Facs
+  facLocations?: Int32Array;
+  facValues?: FacValue[];
+  facTypes?: FacType[];
+  pixNearestFacNumber?: Int32Array;
+  pixNearestFacDistance?: Float32Array;
+  // Adm 1
+  pixAdm1Index?: Uint8Array;
+  adm1Values?: Adm1Value[];
+};
+
+export type PixelVals<FacValue, FacType extends number | string, Adm1Value> = {
+  popFloat32?: number;
+  nearestFacDistance?: number;
+  nearestFacValue?: FacValue;
+  nearestFacType?: FacType;
+  adm1Index?: number;
+  adm1Value?: Adm1Value;
+};
+
 export function renderMap<
-  T extends number | string,
-  U extends number | string,
-  R
+  FacValue,
+  FacType extends number | string,
+  Adm1Value,
+  ResutsObject
 >(
   canvas: Canvas,
   chroma: chroma,
-  data: {
-    pixPopUint8: Uint8Array;
-    pixPopFloat32?: Float32Array;
-    facLocations: Int32Array;
-    pixNearestFacNumber?: Int32Array;
-    pixNearestFacDistance?: Float32Array;
-    facValues?: T[];
-    facTypes?: U[];
-  },
+  data: RenderMapData<FacValue, FacType, Adm1Value>,
   helpers: {
     results?: {
-      startingObject: R;
+      startingObject: ResutsObject;
       popAccumulator: (
-        currentObject: R,
-        pop: number,
-        nearestFacDistance: number | undefined,
-        nearestFacValue: T | undefined,
-        nearestFacType: U | undefined
+        currentObject: ResutsObject,
+        vals: PixelVals<FacValue, FacType, Adm1Value>
       ) => void;
       facAccumulator: (
-        currentObject: R,
-        facValue: T | undefined,
-        facType: U | undefined
+        currentObject: ResutsObject,
+        facValue: FacValue | undefined,
+        facType: FacType | undefined
       ) => void;
     };
-    getPixelColor?: (
-      nearestFacDistance: number | undefined,
-      nearestFacValue: T | undefined,
-      nearestFacType: U | undefined
-    ) => string | undefined;
+    getPixelColor?: (vals: PixelVals<FacValue, FacType, Adm1Value>) => string;
+    getPointColor?: (
+      facValue: FacValue | undefined,
+      facType: FacType | undefined
+    ) => string;
     getPointStyle?: (
-      facValue: T | undefined,
-      facType: U | undefined
+      facValue: FacValue | undefined,
+      facType: FacType | undefined
     ) => PointStyle;
-    getPointColor?: (facValue: T | undefined, facType: U | undefined) => string;
     getPointRadius?: (
-      facValue: T | undefined,
-      facType: U | undefined
+      facValue: FacValue | undefined,
+      facType: FacType | undefined
+    ) => number;
+    getPointStrokeWidth?: (
+      facValue: FacValue | undefined,
+      facType: FacType | undefined
     ) => number;
   },
   opts: {
-    defaultPopColor: string;
-    defaultFacPointColor: string;
-    defaultFacPointStyle: PointStyle;
-    defaultFacPointRadius: number;
-    defaultFacPointStrokeWidth: number;
+    pixelColor?: string;
+    pointColor?: string;
+    pointStyle?: PointStyle;
+    pointRadius?: number;
+    pointStrokeWidth?: number;
     mapPixelW: number;
     mapPixelH: number;
     mapPixelPad: number;
   }
-): R | undefined {
+): ResutsObject | undefined {
   const ctx = canvas.getContext("2d");
   const imageData = ctx.createImageData(opts.mapPixelW, opts.mapPixelH);
 
   const nPixels = data.pixPopUint8.length;
-  const nFacilities = data.facLocations.length / 2;
+  const nFacilities = (data.facLocations?.length ?? 0) / 2;
 
   if (nPixels !== imageData.width * imageData.height) {
     throw new Error("pixPopUint8 not same length as canvas");
@@ -83,9 +103,24 @@ export function renderMap<
   ) {
     throw new Error("pixNearestFacDistance not equal to pixPopUint8");
   }
+  if (!helpers.getPixelColor && opts.pixelColor === undefined) {
+    throw new Error("At least one pixelColor opt needs to be defined");
+  }
+  if (!helpers.getPointColor && opts.pointColor === undefined) {
+    throw new Error("At least one pointColor opt needs to be defined");
+  }
+  if (!helpers.getPointStyle && opts.pointStyle === undefined) {
+    throw new Error("At least one pointStyle opt needs to be defined");
+  }
+  if (!helpers.getPointRadius && opts.pointRadius === undefined) {
+    throw new Error("At least one pointRadius opt needs to be defined");
+  }
+  if (!helpers.getPointStrokeWidth && opts.pointStrokeWidth === undefined) {
+    throw new Error("At least one pointStrokeWidth opt needs to be defined");
+  }
 
   const colorMap: Record<string, [number, number, number]> = {};
-  const resultsObject: R = structuredClone(
+  const resultsObject: ResutsObject = structuredClone(
     helpers.results?.startingObject ?? {}
   );
 
@@ -93,7 +128,6 @@ export function renderMap<
     if (data.pixPopUint8[iPix] === 255) {
       continue;
     }
-    const nearestFacDistance = data.pixNearestFacDistance?.[iPix];
     const nearestFacNumber = data.pixNearestFacNumber?.[iPix];
     if (
       nearestFacNumber &&
@@ -102,9 +136,14 @@ export function renderMap<
       throw new Error("Bad nearest fac number");
     }
     const { facValue, facType } = getFacValueAndType(data, nearestFacNumber);
-    const color =
-      helpers.getPixelColor?.(nearestFacDistance, facValue, facType) ??
-      opts.defaultPopColor;
+    const vals: PixelVals<FacValue, FacType, Adm1Value> = {
+      popFloat32: data.pixPopFloat32?.[iPix],
+      adm1Index: data.pixAdm1Index?.[iPix],
+      nearestFacDistance: data.pixNearestFacDistance?.[iPix],
+      nearestFacValue: facValue,
+      nearestFacType: facType,
+    };
+    const color = helpers.getPixelColor?.(vals) ?? opts.pixelColor ?? "#000000";
     if (!colorMap[color]) {
       colorMap[color] = chroma(color).rgba();
     }
@@ -114,34 +153,33 @@ export function renderMap<
     imageData.data[iImgData + 1] = rgb[1];
     imageData.data[iImgData + 2] = rgb[2];
     imageData.data[iImgData + 3] = data.pixPopUint8[iPix];
-    helpers.results?.popAccumulator(
-      resultsObject,
-      data.pixPopFloat32?.[iPix] ?? 0,
-      nearestFacDistance,
-      facValue,
-      facType
-    );
+    helpers.results?.popAccumulator(resultsObject, vals);
   }
 
   ctx.putImageData(imageData, opts.mapPixelPad, opts.mapPixelPad);
 
-  const nFacs = data.facLocations.length / 2;
-  for (let iFac = 0; iFac < nFacs; iFac++) {
-    const facX = data.facLocations[iFac * 2];
-    const facY = data.facLocations[iFac * 2 + 1];
-    const facValue = data.facValues?.[iFac];
-    const facType = data.facTypes?.[iFac];
-    addPoint(
-      ctx,
-      helpers.getPointStyle?.(facValue, facType) ?? opts.defaultFacPointStyle,
-      facX + opts.mapPixelPad,
-      facY + opts.mapPixelPad,
-      helpers.getPointRadius?.(facValue, facType) ?? opts.defaultFacPointRadius,
-      helpers.getPointColor?.(facValue, facType) ?? opts.defaultFacPointColor,
-      opts.defaultFacPointStrokeWidth,
-      chroma
-    );
-    helpers.results?.facAccumulator(resultsObject, facValue, facType);
+  if (data.facLocations) {
+    for (let iFac = 0; iFac < nFacilities; iFac++) {
+      const facX = data.facLocations[iFac * 2];
+      const facY = data.facLocations[iFac * 2 + 1];
+      const facValue = data.facValues?.[iFac];
+      const facType = data.facTypes?.[iFac];
+      addPoint(
+        ctx,
+        helpers.getPointStyle?.(facValue, facType) ??
+          opts.pointStyle ??
+          "circle",
+        facX + opts.mapPixelPad,
+        facY + opts.mapPixelPad,
+        helpers.getPointRadius?.(facValue, facType) ?? opts.pointRadius ?? 10,
+        helpers.getPointColor?.(facValue, facType) ??
+          opts.pointColor ??
+          "#000000",
+        opts.pointStrokeWidth ?? 3,
+        chroma
+      );
+      helpers.results?.facAccumulator(resultsObject, facValue, facType);
+    }
   }
 
   return resultsObject;
@@ -152,19 +190,13 @@ export function renderMap<
 ///////////////////////////////////////////////////////////////////////////////////
 
 function getFacValueAndType<
-  T extends number | string,
-  U extends number | string
+  FacValue,
+  FacType extends number | string,
+  Adm1Value
 >(
-  data: {
-    pixPopUint8: Uint8Array;
-    facLocations: Int32Array;
-    pixNearestFacNumber?: Int32Array;
-    pixNearestFacDistance?: Float32Array;
-    facValues?: T[];
-    facTypes?: U[];
-  },
+  data: RenderMapData<FacValue, FacType, Adm1Value>,
   nearestFacNumber: number | undefined
-): { facValue: T | undefined; facType: U | undefined } {
+): { facValue: FacValue | undefined; facType: FacType | undefined } {
   if (nearestFacNumber === undefined) {
     return { facValue: undefined, facType: undefined };
   }

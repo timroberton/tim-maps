@@ -140,7 +140,7 @@ function renderMap(canvas, chroma, data, helpers, opts) {
   const ctx = canvas.getContext("2d");
   const imageData = ctx.createImageData(opts.mapPixelW, opts.mapPixelH);
   const nPixels = data.pixPopUint8.length;
-  const nFacilities = data.facLocations.length / 2;
+  const nFacilities = (data.facLocations?.length ?? 0) / 2;
   if (nPixels !== imageData.width * imageData.height) {
     throw new Error("pixPopUint8 not same length as canvas");
   }
@@ -156,6 +156,21 @@ function renderMap(canvas, chroma, data, helpers, opts) {
   if (data.pixNearestFacDistance && data.pixNearestFacDistance.length !== nPixels) {
     throw new Error("pixNearestFacDistance not equal to pixPopUint8");
   }
+  if (!helpers.getPixelColor && opts.pixelColor === void 0) {
+    throw new Error("At least one pixelColor opt needs to be defined");
+  }
+  if (!helpers.getPointColor && opts.pointColor === void 0) {
+    throw new Error("At least one pointColor opt needs to be defined");
+  }
+  if (!helpers.getPointStyle && opts.pointStyle === void 0) {
+    throw new Error("At least one pointStyle opt needs to be defined");
+  }
+  if (!helpers.getPointRadius && opts.pointRadius === void 0) {
+    throw new Error("At least one pixelColor opt needs to be defined");
+  }
+  if (!helpers.getPointStrokeWidth && opts.pointStrokeWidth === void 0) {
+    throw new Error("At least one pointStrokeWidth opt needs to be defined");
+  }
   const colorMap = {};
   const resultsObject = structuredClone(
     helpers.results?.startingObject ?? {}
@@ -164,13 +179,19 @@ function renderMap(canvas, chroma, data, helpers, opts) {
     if (data.pixPopUint8[iPix] === 255) {
       continue;
     }
-    const nearestFacDistance = data.pixNearestFacDistance?.[iPix];
     const nearestFacNumber = data.pixNearestFacNumber?.[iPix];
     if (nearestFacNumber && (nearestFacNumber < 1 || nearestFacNumber > nFacilities)) {
       throw new Error("Bad nearest fac number");
     }
     const { facValue, facType } = getFacValueAndType(data, nearestFacNumber);
-    const color = helpers.getPixelColor?.(nearestFacDistance, facValue, facType) ?? opts.defaultPopColor;
+    const vals = {
+      popFloat32: data.pixPopFloat32?.[iPix],
+      adm1Index: data.pixAdm1Index?.[iPix],
+      nearestFacDistance: data.pixNearestFacDistance?.[iPix],
+      nearestFacValue: facValue,
+      nearestFacType: facType
+    };
+    const color = helpers.getPixelColor?.(vals) ?? opts.pixelColor ?? "#000000";
     if (!colorMap[color]) {
       colorMap[color] = chroma(color).rgba();
     }
@@ -180,32 +201,27 @@ function renderMap(canvas, chroma, data, helpers, opts) {
     imageData.data[iImgData + 1] = rgb[1];
     imageData.data[iImgData + 2] = rgb[2];
     imageData.data[iImgData + 3] = data.pixPopUint8[iPix];
-    helpers.results?.popAccumulator(
-      resultsObject,
-      data.pixPopFloat32?.[iPix] ?? 0,
-      nearestFacDistance,
-      facValue,
-      facType
-    );
+    helpers.results?.popAccumulator(resultsObject, vals);
   }
   ctx.putImageData(imageData, opts.mapPixelPad, opts.mapPixelPad);
-  const nFacs = data.facLocations.length / 2;
-  for (let iFac = 0; iFac < nFacs; iFac++) {
-    const facX = data.facLocations[iFac * 2];
-    const facY = data.facLocations[iFac * 2 + 1];
-    const facValue = data.facValues?.[iFac];
-    const facType = data.facTypes?.[iFac];
-    addPoint(
-      ctx,
-      helpers.getPointStyle?.(facValue, facType) ?? opts.defaultFacPointStyle,
-      facX + opts.mapPixelPad,
-      facY + opts.mapPixelPad,
-      helpers.getPointRadius?.(facValue, facType) ?? opts.defaultFacPointRadius,
-      helpers.getPointColor?.(facValue, facType) ?? opts.defaultFacPointColor,
-      opts.defaultFacPointStrokeWidth,
-      chroma
-    );
-    helpers.results?.facAccumulator(resultsObject, facValue, facType);
+  if (data.facLocations) {
+    for (let iFac = 0; iFac < nFacilities; iFac++) {
+      const facX = data.facLocations[iFac * 2];
+      const facY = data.facLocations[iFac * 2 + 1];
+      const facValue = data.facValues?.[iFac];
+      const facType = data.facTypes?.[iFac];
+      addPoint(
+        ctx,
+        helpers.getPointStyle?.(facValue, facType) ?? opts.pointStyle ?? "circle",
+        facX + opts.mapPixelPad,
+        facY + opts.mapPixelPad,
+        helpers.getPointRadius?.(facValue, facType) ?? opts.pointRadius ?? 10,
+        helpers.getPointColor?.(facValue, facType) ?? opts.pointColor ?? "#000000",
+        opts.pointStrokeWidth ?? 3,
+        chroma
+      );
+      helpers.results?.facAccumulator(resultsObject, facValue, facType);
+    }
   }
   return resultsObject;
 }
