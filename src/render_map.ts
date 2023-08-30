@@ -49,11 +49,11 @@ export function renderMap<
   helpers: {
     results?: {
       startingObject: ResutsObject;
-      popAccumulator: (
+      popAccumulator?: (
         currentObject: ResutsObject,
         vals: PixelVals<FacValue, FacType, Adm1Value>
       ) => void;
-      facAccumulator: (
+      facAccumulator?: (
         currentObject: ResutsObject,
         vals: FacVals<FacValue, FacType>
       ) => void;
@@ -190,7 +190,7 @@ export function renderMap<
     imageData.data[iImgData + 1] = colorMap[color][1];
     imageData.data[iImgData + 2] = colorMap[color][2];
     imageData.data[iImgData + 3] = data.pixPopUint8[iPix];
-    helpers.results?.popAccumulator(resultsObject, vals);
+    helpers.results?.popAccumulator?.(resultsObject, vals);
   }
 
   ctx.putImageData(imageData, opts.mapPixelPad, opts.mapPixelPad);
@@ -213,7 +213,7 @@ export function renderMap<
         opts.pointStrokeWidth ?? 3,
         chroma
       );
-      helpers.results?.facAccumulator(resultsObject, vals);
+      helpers.results?.facAccumulator?.(resultsObject, vals);
     }
   }
 

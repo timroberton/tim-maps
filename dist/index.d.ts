@@ -54,11 +54,11 @@ export declare function renderMap<
   helpers: {
     results?: {
       startingObject: ResutsObject;
-      popAccumulator: (
+      popAccumulator?: (
         currentObject: ResutsObject,
         vals: PixelVals<FacValue, FacType, Adm1Value>
       ) => void;
-      facAccumulator: (
+      facAccumulator?: (
         currentObject: ResutsObject,
         vals: FacVals<FacValue, FacType>
       ) => void;

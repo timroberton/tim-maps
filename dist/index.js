@@ -143,9 +143,7 @@ function renderMap(canvas, chroma, data, helpers, opts) {
   const nPixels = data.pixPopUint8.length;
   const nFacilities = (data.facLocations?.length ?? 0) / 2;
   const colorMap = {};
-  const resultsObject = structuredClone(
-    helpers.results?.startingObject ?? {}
-  );
+  const resultsObject = structuredClone(helpers.results?.startingObject ?? {});
   if (nPixels !== imageData.width * imageData.height) {
     throw new Error("pixPopUint8 not same length as canvas");
   }
@@ -158,7 +156,10 @@ function renderMap(canvas, chroma, data, helpers, opts) {
   if (data.pixNearestFacNumber && data.pixNearestFacNumber.length !== nPixels) {
     throw new Error("pixNearestFacNumber not equal to pixPopUint8");
   }
-  if (data.pixNearestFacDistance && data.pixNearestFacDistance.length !== nPixels) {
+  if (
+    data.pixNearestFacDistance &&
+    data.pixNearestFacDistance.length !== nPixels
+  ) {
     throw new Error("pixNearestFacDistance not equal to pixPopUint8");
   }
   if (!helpers.getPixelColor && opts.pixelColor === void 0) {
@@ -208,18 +209,22 @@ function renderMap(canvas, chroma, data, helpers, opts) {
     if (data.pixPopUint8[iPix] === 255) {
       continue;
     }
-    const nearestFacIndex = data.pixNearestFacNumber ? data.pixNearestFacNumber[iPix] - 1 : void 0;
+    const nearestFacIndex = data.pixNearestFacNumber
+      ? data.pixNearestFacNumber[iPix] - 1
+      : void 0;
     const adm1Index = data.pixAdm1Index?.[iPix];
     const vals = {
       popFloat32: data.pixPopFloat32?.[iPix],
       // Fac
       nearestFacIndex,
       nearestFacDistance: data.pixNearestFacDistance?.[iPix],
-      nearestFacValue: nearestFacIndex !== void 0 ? data.facValues?.[nearestFacIndex] : void 0,
-      nearestFacType: nearestFacIndex !== void 0 ? data.facTypes?.[nearestFacIndex] : void 0,
+      nearestFacValue:
+        nearestFacIndex !== void 0 ? data.facValues?.[nearestFacIndex] : void 0,
+      nearestFacType:
+        nearestFacIndex !== void 0 ? data.facTypes?.[nearestFacIndex] : void 0,
       // Adm 1
       adm1Index: data.pixAdm1Index?.[iPix],
-      adm1Value: adm1Index !== void 0 ? data.adm1Values?.[adm1Index] : void 0
+      adm1Value: adm1Index !== void 0 ? data.adm1Values?.[adm1Index] : void 0,
     };
     const color = helpers.getPixelColor?.(vals) ?? opts.pixelColor ?? "#000000";
     if (!colorMap[color]) {
@@ -230,7 +235,7 @@ function renderMap(canvas, chroma, data, helpers, opts) {
     imageData.data[iImgData + 1] = colorMap[color][1];
     imageData.data[iImgData + 2] = colorMap[color][2];
     imageData.data[iImgData + 3] = data.pixPopUint8[iPix];
-    helpers.results?.popAccumulator(resultsObject, vals);
+    helpers.results?.popAccumulator?.(resultsObject, vals);
   }
   ctx.putImageData(imageData, opts.mapPixelPad, opts.mapPixelPad);
   if (data.facLocations) {
@@ -239,7 +244,7 @@ function renderMap(canvas, chroma, data, helpers, opts) {
       const facY = data.facLocations[iFac * 2 + 1];
       const vals = {
         facValue: data.facValues?.[iFac],
-        facType: data.facTypes?.[iFac]
+        facType: data.facTypes?.[iFac],
       };
       addPoint(
         ctx,
@@ -251,11 +256,9 @@ function renderMap(canvas, chroma, data, helpers, opts) {
         opts.pointStrokeWidth ?? 3,
         chroma
       );
-      helpers.results?.facAccumulator(resultsObject, vals);
+      helpers.results?.facAccumulator?.(resultsObject, vals);
     }
   }
   return resultsObject;
 }
-export {
-  renderMap
-};
+export { renderMap };
