@@ -1,12 +1,5 @@
 import { CanvasRenderingContext2D, chroma } from "./deps.ts";
-
-export type PointStyle =
-  | "circle"
-  | "crossRot"
-  | "rectRot"
-  | "cross"
-  | "rect"
-  | "triangle";
+import { PointStyle } from "./types.ts";
 
 export const _POINT_STYLES: PointStyle[] = [
   "circle",

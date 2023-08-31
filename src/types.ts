@@ -1,4 +1,4 @@
- 
+import { Canvas, chroma } from "./deps.ts";
 
 export type PointStyle =
   | "circle"
@@ -91,8 +91,8 @@ export declare function renderMap<
   Adm1Value,
   ResutsObject
 >(
-  canvas: any,
-  chroma: any,
+  canvas: Canvas,
+  chroma: chroma,
   data: TimMapData<FacValue, FacType, Adm1Value>,
   config: RenderMapConfig<FacValue, FacType, Adm1Value, ResutsObject>
 ): ResutsObject | undefined;
