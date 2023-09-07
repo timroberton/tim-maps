@@ -11,19 +11,25 @@ export type PointStyle =
 export type TimMapData<FacValue, FacType, Adm1Value> = {
   pixPopUint8: Uint8Array;
   pixPopFloat32?: Float32Array;
+  pixW: number;
+  pixH: number;
   // Facs
-  facLocations?: Int32Array;
-  facValues?: FacValue[];
-  facTypes?: FacType[];
-  // Linked
-  linkedFacs?: {
-    pixNearestFacNumber: Int16Array;
-    pixNearestFacDistance: Float32Array;
-    nNearestVals: number;
+  facs?: {
+    facLocations: Int32Array;
+    facValues?: FacValue[];
+    facTypes?: FacType[];
+    // Linked
+    facLinks?: {
+      pixNearestFacNumber: Int16Array;
+      pixNearestFacDistance: Float32Array;
+      nNearestVals: number;
+    };
   };
   // Adm1
-  pixAdm1Number?: Uint8Array;
-  adm1Values?: Adm1Value[];
+  adm1?: {
+    pixAdm1Number: Uint8Array;
+    adm1Values?: Adm1Value[];
+  };
 };
 
 export type TimMapResults<FacValue, FacType, Adm1Value, ResutsObject> = {
@@ -46,8 +52,6 @@ export type RenderMapConfig<FacValue, FacType, Adm1Value, ResutsObject> = {
     w: number;
     h: number;
   };
-  mapPixelW: number;
-  mapPixelH: number;
   mapPixelPad?: number;
   validate?: boolean;
   filterPixels?: (
@@ -113,14 +117,8 @@ export type FacVals<FacValue, FacType> = {
 };
 
 export declare function renderMap<FacValue, FacType, Adm1Value, ResutsObject>(
-  canvas: Canvas,
-  chroma: chroma,
+  canvas: Canvas | undefined,
+  chroma: chroma | undefined,
   data: TimMapData<FacValue, FacType, Adm1Value>,
   config: RenderMapConfig<FacValue, FacType, Adm1Value, ResutsObject>
-): ResutsObject | undefined;
-
-export declare function getResults<FacValue, FacType, Adm1Value, ResutsObject>(
-  data: TimMapData<FacValue, FacType, Adm1Value>,
-  results: TimMapResults<FacValue, FacType, Adm1Value, ResutsObject>,
-  config?: GetResultsConfig
 ): ResutsObject | undefined;

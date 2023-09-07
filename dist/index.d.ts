@@ -11,19 +11,25 @@ export type PointStyle =
 export type TimMapData<FacValue, FacType, Adm1Value> = {
   pixPopUint8: Uint8Array;
   pixPopFloat32?: Float32Array;
+  pixW: number;
+  pixH: number;
   // Facs
-  facLocations?: Int32Array;
-  facValues?: FacValue[];
-  facTypes?: FacType[];
-  // Linked
-  linkedFacs?: {
-    pixNearestFacNumber: Int16Array;
-    pixNearestFacDistance: Float32Array;
-    nNearestVals: number;
+  facs?: {
+    facLocations: Int32Array;
+    facValues?: FacValue[];
+    facTypes?: FacType[];
+    // Linked
+    facLinks?: {
+      pixNearestFacNumber: Int16Array;
+      pixNearestFacDistance: Float32Array;
+      nNearestVals: number;
+    };
   };
   // Adm1
-  pixAdm1Number?: Uint8Array;
-  adm1Values?: Adm1Value[];
+  adm1?: {
+    pixAdm1Number: Uint8Array;
+    adm1Values?: Adm1Value[];
+  };
 };
 
 export type TimMapResults<FacValue, FacType, Adm1Value, ResutsObject> = {
@@ -46,8 +52,6 @@ export type RenderMapConfig<FacValue, FacType, Adm1Value, ResutsObject> = {
     w: number;
     h: number;
   };
-  mapPixelW: number;
-  mapPixelH: number;
   mapPixelPad?: number;
   validate?: boolean;
   filterPixels?: (
@@ -119,8 +123,134 @@ export declare function renderMap<FacValue, FacType, Adm1Value, ResutsObject>(
   config: RenderMapConfig<FacValue, FacType, Adm1Value, ResutsObject>
 ): ResutsObject | undefined;
 
-export declare function getResults<FacValue, FacType, Adm1Value, ResutsObject>(
-  data: TimMapData<FacValue, FacType, Adm1Value>,
-  results: TimMapResults<FacValue, FacType, Adm1Value, ResutsObject>,
-  config?: GetResultsConfig
-): ResutsObject | undefined;
+
+
+export type Meta = {
+  inputDirAbsolutePath: string;
+  outputDirAbsolutePath: string;
+  popTiffRelativePath: string;
+  popTiffScale: ScaleDirectionAndFactor;
+  popTiffCrop?: {
+    WestBound: number;
+    EastBound: number;
+    SouthBound: number;
+    NorthBound: number;
+  };
+  //
+  facilities: FacilitiesInputInfo;
+  //
+  adm1?: MetaAdm;
+  adm2?: MetaAdm;
+  absolutePathToCopyOutputFilesTo?: string | string[];
+};
+
+export type MetaAdm = {
+  shpRelativePath: string;
+  featureColumnName: string;
+  nFeatures: number;
+  makeFeaturesAsIndividualDatasets: boolean;
+};
+
+export type ScaleDirectionAndFactor =
+  | {
+      direction: "increaseResolution" | "decreaseResolution";
+      factor: number;
+    }
+  | { direction: "none" };
+
+export type AdmSelection =
+  | { level: "adm0" }
+  | { level: "adm1"; featureNumber: number }
+  | { level: "adm2"; featureNumber: number };
+
+export type FacilitiesInputInfo =
+  | {
+      format: "csv";
+      csvRelativePath: string;
+      csvLatVar: string;
+      csvLonVar: string;
+      specifiedFacTypes?: {
+        csvVar: string;
+        include: string[];
+      };
+    }
+  | {
+      format: "json";
+      jsonRelativePath: string;
+      jsonLatProp: string;
+      jsonLonProp: string;
+      specifiedFacTypes?: {
+        jsonProp: string;
+        include: string[];
+      };
+    };
+
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+
+export type DataPackage = {
+  popRasterDimensions: {
+    pixelW: number;
+    pixelH: number;
+    nPixels: number;
+    geoExtent: number[];
+  };
+  admInfo: AdmInfo;
+  facilitiesInfo: FacilitiesInfo;
+  files: string[];
+};
+
+export type PopDimensions = {
+  scaledPixels: number[];
+  scaledExtent: number[];
+  nRows: number;
+};
+
+export type AdmInfo = {
+  hasAdm1: boolean;
+  minAdm1Number: number;
+  maxAdm1Number: number;
+  hasAdm2: boolean;
+  minAdm2Number: number;
+  maxAdm2Number: number;
+};
+
+export type FacilitiesInfo = {
+  nFacilitiesInDataset: number;
+  nFacilitiesInPopRaster: number;
+  specifiedFacTypes: string[];
+  nNearestVals: number;
+};
+
+
+
+ 
+ 
+
+export type MapFiles = {
+  dataPackage: DataPackage;
+  pop_uint8: Uint8Array;
+  pop_float32?: Float32Array;
+  facs?: {
+    facilities_int32: Int32Array;
+    facLinks?: {
+      nearest_int16: Int16Array;
+      distance_float32: Float32Array;
+    };
+  };
+  adm1_uint8?: Uint8Array;
+  adm2_uint8?: Uint8Array;
+};
+
+export declare function fetchMapFiles(
+  url: string,
+  updateProgress?: (pct: number) => void
+): Promise<MapFiles>;
+
+export declare function getMapDataFromFiles<FacValue, FacType, Adm1Value>(
+  mapFiles: MapFiles,
+  facValues: FacValue[] | undefined,
+  facTypes: FacType[] | undefined,
+  adm1Values: Adm1Value[] | undefined
+): TimMapData<FacValue, FacType, Adm1Value>;

@@ -6,7 +6,7 @@ import {
   _FILENAME_FRONTEND_ADM2_BIN_UNCHECKED,
   _FILENAME_FRONTEND_POP_FLOAT32_BIN,
 } from "./consts.ts";
-import { AdmInfo, PopDimensions } from "./deps.ts";
+import { AdmInfo, PopDimensions } from "./types.ts";
 import { AdmSelection, Meta } from "./types.ts";
 import { getOutputSubFolderPath, getPopDimensions } from "./util_funcs.ts";
 
@@ -109,8 +109,10 @@ export async function makeAdmBinFilesForSubFolder(
   }
 
   const admInfo: AdmInfo = {
+    hasAdm1: !!meta.adm1,
     minAdm1Number,
     maxAdm1Number,
+    hasAdm2: !!meta.adm2,
     minAdm2Number,
     maxAdm2Number,
   };

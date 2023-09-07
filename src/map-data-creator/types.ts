@@ -71,6 +71,7 @@ export type DataPackage = {
   };
   admInfo: AdmInfo;
   facilitiesInfo: FacilitiesInfo;
+  files: string[];
 };
 
 export type PopDimensions = {
@@ -80,8 +81,10 @@ export type PopDimensions = {
 };
 
 export type AdmInfo = {
+  hasAdm1: boolean;
   minAdm1Number: number;
   maxAdm1Number: number;
+  hasAdm2: boolean;
   minAdm2Number: number;
   maxAdm2Number: number;
 };

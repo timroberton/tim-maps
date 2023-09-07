@@ -5,7 +5,7 @@ import {
   _FILENAME_FRONTEND_NEAREST_INT16_BIN,
   _FILENAME_FRONTEND_POP_FLOAT32_BIN,
 } from "./consts.ts";
-import { FacilitiesInfo, PopDimensions } from "./deps.ts";
+import { FacilitiesInfo, PopDimensions } from "./types.ts";
 import { getFacilitiesData } from "./get_facilities_data.ts";
 import { Meta } from "./types.ts";
 import { getOutputSubFolderPath, getPopDimensions } from "./util_funcs.ts";

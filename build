@@ -1,9 +1,21 @@
 #!/bin/sha512
 set -e
 
-/usr/local/lib/node_modules/esbuild/bin/esbuild ./src/map-renderer/mod.ts --bundle --outfile=./dist/index.js --format=esm
+/usr/local/lib/node_modules/esbuild/bin/esbuild ./src/for_js_build.ts --bundle --outfile=./dist/index.js --format=esm
+sed -i '' 's/import { join } from "https:\/\/deno.land\/std@0.183.0\/path\/mod.ts";/ /g' ./dist/index.js
+
 
 cp src/map-renderer/types.ts dist/index.d.ts
 sed -i '' 's/import { Canvas, chroma } from ".\/deps.ts";/ /g' ./dist/index.d.ts
-sed -i '' 's/canvas: Canvas,/canvas: any,/g' ./dist/index.d.ts
-sed -i '' 's/chroma: chroma,/chroma: any,/g' ./dist/index.d.ts
+sed -i '' 's/canvas: Canvas | undefined,/canvas: any,/g' ./dist/index.d.ts
+sed -i '' 's/chroma: chroma | undefined,/chroma: any,/g' ./dist/index.d.ts
+
+echo '\n\n' >> dist/index.d.ts
+
+cat src/map-data-creator/types.ts >> dist/index.d.ts
+
+echo '\n\n' >> dist/index.d.ts
+
+cat src/map-data-fetcher/types.ts >> dist/index.d.ts
+sed -i '' 's/import { DataPackage } from ".\/deps.ts";/ /g' ./dist/index.d.ts
+sed -i '' 's/import { TimMapData } from ".\/deps.ts";/ /g' ./dist/index.d.ts

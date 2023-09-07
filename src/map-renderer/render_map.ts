@@ -9,12 +9,12 @@ export function renderMap<FacValue, FacType, Adm1Value, ResutsObject>(
   data: TimMapData<FacValue, FacType, Adm1Value>,
   config: RenderMapConfig<FacValue, FacType, Adm1Value, ResutsObject>
 ): ResutsObject | undefined {
-  const nFacilities = (data.facLocations?.length ?? 0) / 2;
+  const nFacilities = (data.facs?.facLocations.length ?? 0) / 2;
   const pixelPad = config.mapPixelPad ?? 0;
   const croppedPixelX = config.crop?.x ?? 0;
   const croppedPixelY = config.crop?.y ?? 0;
-  const croppedPixelW = config.crop?.w ?? config.mapPixelW;
-  const croppedPixelH = config.crop?.h ?? config.mapPixelH;
+  const croppedPixelW = config.crop?.w ?? data.pixW;
+  const croppedPixelH = config.crop?.h ?? data.pixH;
 
   let ctx;
   let imageData;
@@ -46,43 +46,26 @@ export function renderMap<FacValue, FacType, Adm1Value, ResutsObject>(
     ) {
       throw new Error("pixPopFloat32 not same length as pixPopUint8");
     }
-    if (data.facValues && data.facValues.length !== nFacilities) {
-      throw new Error("facLocations not twice the length of facValues");
-    }
-    if (data.linkedFacs) {
-      if (
-        data.linkedFacs.pixNearestFacNumber &&
-        data.linkedFacs.pixNearestFacNumber.length !==
-          data.pixPopUint8.length * data.linkedFacs.nNearestVals
-      ) {
-        throw new Error("pixNearestFacNumber not equal to pixPopUint8");
+    if (data.facs) {
+      if (data.facs.facValues && data.facs.facValues.length !== nFacilities) {
+        throw new Error("facLocations not twice the length of facValues");
       }
-      if (
-        data.linkedFacs.pixNearestFacDistance &&
-        data.linkedFacs.pixNearestFacDistance.length !==
-          data.pixPopUint8.length * data.linkedFacs.nNearestVals
-      ) {
-        throw new Error("pixNearestFacDistance not equal to pixPopUint8");
-      }
-      // if (!config.getPixelColor && config.pixelColor === undefined) {
-      //   throw new Error("At least one pixelColor opt needs to be defined");
-      // }
-      // if (!config.getPointColor && config.pointColor === undefined) {
-      //   throw new Error("At least one pointColor opt needs to be defined");
-      // }
-      // if (!config.getPointStyle && config.pointStyle === undefined) {
-      //   throw new Error("At least one pointStyle opt needs to be defined");
-      // }
-      // if (!config.getPointRadius && config.pointRadius === undefined) {
-      //   throw new Error("At least one pointRadius opt needs to be defined");
-      // }
-      // if (!config.getPointStrokeWidth && config.pointStrokeWidth === undefined) {
-      //   throw new Error("At least one pointStrokeWidth opt needs to be defined");
-      // }
-      if (data.linkedFacs.pixNearestFacNumber) {
+      if (data.facs.facLinks) {
+        if (
+          data.facs.facLinks.pixNearestFacNumber.length !==
+          data.pixPopUint8.length * data.facs.facLinks.nNearestVals
+        ) {
+          throw new Error("pixNearestFacNumber not equal to pixPopUint8");
+        }
+        if (
+          data.facs.facLinks.pixNearestFacDistance.length !==
+          data.pixPopUint8.length * data.facs.facLinks.nNearestVals
+        ) {
+          throw new Error("pixNearestFacDistance not equal to pixPopUint8");
+        }
         let minFacNumber = Number.POSITIVE_INFINITY;
         let maxFacNumber = Number.NEGATIVE_INFINITY;
-        data.linkedFacs.pixNearestFacNumber.forEach((v) => {
+        data.facs.facLinks.pixNearestFacNumber.forEach((v) => {
           minFacNumber = Math.min(v, minFacNumber);
           maxFacNumber = Math.max(v, maxFacNumber);
         });
@@ -96,22 +79,13 @@ export function renderMap<FacValue, FacType, Adm1Value, ResutsObject>(
             throw new Error(`Bad nearest fac index - max is ${maxFacNumber}`);
           }
         }
-        // if (minFacIndex !== 0) {
-        //   throw new Error(`Bad nearest fac number - min is not 0`);
-        // }
-        // if (maxFacIndex !== nFacilities - 1) {
-        //   console.log(maxFacIndex, nFacilities);
-        //   throw new Error(
-        //     `Bad nearest fac number - max does not match length of pixNearestFacNumber`
-        //   );
-        // }
       }
     }
-    if (data.pixAdm1Number && data.adm1Values) {
-      const nAdm1s = data.adm1Values.length;
+    if (data.adm1 && data.adm1.adm1Values) {
+      const nAdm1s = data.adm1.adm1Values.length;
       let minAdm1Index = Number.POSITIVE_INFINITY;
       let maxAdm1Index = Number.NEGATIVE_INFINITY;
-      data.pixAdm1Number.forEach((v) => {
+      data.adm1.pixAdm1Number.forEach((v) => {
         if (v === 255) {
           return;
         }
@@ -124,14 +98,6 @@ export function renderMap<FacValue, FacType, Adm1Value, ResutsObject>(
       if (maxAdm1Index < 0 || maxAdm1Index > nAdm1s - 1) {
         throw new Error(`Bad adm1 index - max is ${maxAdm1Index}`);
       }
-      // if (minAdm1Index !== 0) {
-      //   throw new Error(`Bad  adm1 index - min is ${maxAdm1Index} and not 0`);
-      // }
-      // if (maxAdm1Index !== nAdm1s - 1) {
-      //   throw new Error(
-      //     `Bad  adm1 index - max is ${maxAdm1Index} and does not match length of adm1Values`
-      //   );
-      // }
     }
   }
   ////////////////////////////////////
@@ -146,7 +112,7 @@ export function renderMap<FacValue, FacType, Adm1Value, ResutsObject>(
         throw new Error();
       }
       const iPixInOriginal =
-        x + croppedPixelX + (y + croppedPixelY) * config.mapPixelW;
+        x + croppedPixelX + (y + croppedPixelY) * data.pixW;
       if (data.pixPopUint8[iPixInOriginal] === 255) {
         continue;
       }
@@ -180,10 +146,10 @@ export function renderMap<FacValue, FacType, Adm1Value, ResutsObject>(
     ctx.putImageData(imageData, pixelPad, pixelPad);
   }
 
-  if (data.facLocations) {
+  if (data.facs) {
     for (let iFac = 0; iFac < nFacilities; iFac++) {
-      const facX = data.facLocations[iFac * 2];
-      const facY = data.facLocations[iFac * 2 + 1];
+      const facX = data.facs.facLocations[iFac * 2];
+      const facY = data.facs.facLocations[iFac * 2 + 1];
       if (facX === -9999 && facY === -9999) {
         continue;
       }
@@ -195,14 +161,14 @@ export function renderMap<FacValue, FacType, Adm1Value, ResutsObject>(
       ) {
         continue;
       }
-      const iPixInOriginal = facX + facY * config.mapPixelW;
+      const iPixInOriginal = facX + facY * data.pixW;
       const pixelVals: PixelVals<FacValue, FacType, Adm1Value> = getPixelVals(
         data,
         iPixInOriginal
       );
       const facVals: FacVals<FacValue, FacType> = {
-        facValue: data.facValues?.[iFac],
-        facType: data.facTypes?.[iFac],
+        facValue: data.facs.facValues?.[iFac],
+        facType: data.facs.facTypes?.[iFac],
       };
       if (config.filterFacs && !config.filterFacs(facVals, pixelVals)) {
         continue;

@@ -137,30 +137,30 @@ function drawTriangle(ctx, x, y, radius, fill, stroke, strokeWidth) {
 
 // src/map-renderer/get_pixel_vals.ts
 function getPixelVals(data, iPixInOriginal) {
-  const hasAdm1Number = data.pixAdm1Number !== void 0 && data.pixAdm1Number[iPixInOriginal] !== 0;
-  const adm1Index = hasAdm1Number ? data.pixAdm1Number[iPixInOriginal] - 1 : void 0;
-  if (!data.linkedFacs) {
+  const hasAdm1Number = data.adm1 && data.adm1.pixAdm1Number[iPixInOriginal] !== 0;
+  const adm1Index = hasAdm1Number ? data.adm1.pixAdm1Number[iPixInOriginal] - 1 : void 0;
+  if (!data.facs || !data.facs.facLinks) {
     return {
       popFloat32: data.pixPopFloat32?.[iPixInOriginal],
       adm1Index,
       nearestFacs: [],
-      adm1Value: adm1Index !== void 0 ? data.adm1Values?.[adm1Index] : void 0
+      adm1Value: adm1Index !== void 0 ? data.adm1?.adm1Values?.[adm1Index] : void 0
     };
   }
   const nearestFacs = [];
-  for (let i_f = 0; i_f < data.linkedFacs.nNearestVals; i_f++) {
-    const iInNearest = iPixInOriginal * data.linkedFacs.nNearestVals + i_f;
-    const hasFacNumber = data.linkedFacs.pixNearestFacNumber !== void 0 && data.linkedFacs.pixNearestFacNumber[iInNearest] !== -9999;
+  for (let i_f = 0; i_f < data.facs.facLinks.nNearestVals; i_f++) {
+    const iInNearest = iPixInOriginal * data.facs.facLinks.nNearestVals + i_f;
+    const hasFacNumber = data.facs.facLinks.pixNearestFacNumber !== void 0 && data.facs.facLinks.pixNearestFacNumber[iInNearest] !== -9999;
     if (!hasFacNumber) {
       nearestFacs.push("nofac");
       continue;
     }
-    const facIndex = data.linkedFacs.pixNearestFacNumber[iInNearest] - 1;
+    const facIndex = data.facs.facLinks.pixNearestFacNumber[iInNearest] - 1;
     nearestFacs.push({
       facIndex,
-      facDistance: data.linkedFacs.pixNearestFacDistance[iInNearest],
-      facValue: data.facValues?.[facIndex],
-      facType: data.facTypes?.[facIndex]
+      facDistance: data.facs.facLinks.pixNearestFacDistance[iInNearest],
+      facValue: data.facs.facValues?.[facIndex],
+      facType: data.facs.facTypes?.[facIndex]
     });
   }
   return {
@@ -169,18 +169,18 @@ function getPixelVals(data, iPixInOriginal) {
     nearestFacs,
     // Adm 1
     adm1Index,
-    adm1Value: adm1Index !== void 0 ? data.adm1Values?.[adm1Index] : void 0
+    adm1Value: adm1Index !== void 0 ? data.adm1?.adm1Values?.[adm1Index] : void 0
   };
 }
 
 // src/map-renderer/render_map.ts
 function renderMap(canvas, chroma, data, config) {
-  const nFacilities = (data.facLocations?.length ?? 0) / 2;
+  const nFacilities = (data.facs?.facLocations.length ?? 0) / 2;
   const pixelPad = config.mapPixelPad ?? 0;
   const croppedPixelX = config.crop?.x ?? 0;
   const croppedPixelY = config.crop?.y ?? 0;
-  const croppedPixelW = config.crop?.w ?? config.mapPixelW;
-  const croppedPixelH = config.crop?.h ?? config.mapPixelH;
+  const croppedPixelW = config.crop?.w ?? data.pixW;
+  const croppedPixelH = config.crop?.h ?? data.pixH;
   let ctx;
   let imageData;
   if (canvas) {
@@ -202,20 +202,20 @@ function renderMap(canvas, chroma, data, config) {
     if (data.pixPopFloat32 && data.pixPopFloat32.length !== data.pixPopUint8.length) {
       throw new Error("pixPopFloat32 not same length as pixPopUint8");
     }
-    if (data.facValues && data.facValues.length !== nFacilities) {
-      throw new Error("facLocations not twice the length of facValues");
-    }
-    if (data.linkedFacs) {
-      if (data.linkedFacs.pixNearestFacNumber && data.linkedFacs.pixNearestFacNumber.length !== data.pixPopUint8.length * data.linkedFacs.nNearestVals) {
-        throw new Error("pixNearestFacNumber not equal to pixPopUint8");
+    if (data.facs) {
+      if (data.facs.facValues && data.facs.facValues.length !== nFacilities) {
+        throw new Error("facLocations not twice the length of facValues");
       }
-      if (data.linkedFacs.pixNearestFacDistance && data.linkedFacs.pixNearestFacDistance.length !== data.pixPopUint8.length * data.linkedFacs.nNearestVals) {
-        throw new Error("pixNearestFacDistance not equal to pixPopUint8");
-      }
-      if (data.linkedFacs.pixNearestFacNumber) {
+      if (data.facs.facLinks) {
+        if (data.facs.facLinks.pixNearestFacNumber.length !== data.pixPopUint8.length * data.facs.facLinks.nNearestVals) {
+          throw new Error("pixNearestFacNumber not equal to pixPopUint8");
+        }
+        if (data.facs.facLinks.pixNearestFacDistance.length !== data.pixPopUint8.length * data.facs.facLinks.nNearestVals) {
+          throw new Error("pixNearestFacDistance not equal to pixPopUint8");
+        }
         let minFacNumber = Number.POSITIVE_INFINITY;
         let maxFacNumber = Number.NEGATIVE_INFINITY;
-        data.linkedFacs.pixNearestFacNumber.forEach((v) => {
+        data.facs.facLinks.pixNearestFacNumber.forEach((v) => {
           minFacNumber = Math.min(v, minFacNumber);
           maxFacNumber = Math.max(v, maxFacNumber);
         });
@@ -231,11 +231,11 @@ function renderMap(canvas, chroma, data, config) {
         }
       }
     }
-    if (data.pixAdm1Number && data.adm1Values) {
-      const nAdm1s = data.adm1Values.length;
+    if (data.adm1 && data.adm1.adm1Values) {
+      const nAdm1s = data.adm1.adm1Values.length;
       let minAdm1Index = Number.POSITIVE_INFINITY;
       let maxAdm1Index = Number.NEGATIVE_INFINITY;
-      data.pixAdm1Number.forEach((v) => {
+      data.adm1.pixAdm1Number.forEach((v) => {
         if (v === 255) {
           return;
         }
@@ -258,7 +258,7 @@ function renderMap(canvas, chroma, data, config) {
       if (i !== iPixInSmallerCroppedImage) {
         throw new Error();
       }
-      const iPixInOriginal = x + croppedPixelX + (y + croppedPixelY) * config.mapPixelW;
+      const iPixInOriginal = x + croppedPixelX + (y + croppedPixelY) * data.pixW;
       if (data.pixPopUint8[iPixInOriginal] === 255) {
         continue;
       }
@@ -289,24 +289,24 @@ function renderMap(canvas, chroma, data, config) {
   if (imageData && ctx) {
     ctx.putImageData(imageData, pixelPad, pixelPad);
   }
-  if (data.facLocations) {
+  if (data.facs) {
     for (let iFac = 0; iFac < nFacilities; iFac++) {
-      const facX = data.facLocations[iFac * 2];
-      const facY = data.facLocations[iFac * 2 + 1];
+      const facX = data.facs.facLocations[iFac * 2];
+      const facY = data.facs.facLocations[iFac * 2 + 1];
       if (facX === -9999 && facY === -9999) {
         continue;
       }
       if (facX < croppedPixelX || facX >= croppedPixelX + croppedPixelW || facY < croppedPixelY || facY >= croppedPixelY + croppedPixelH) {
         continue;
       }
-      const iPixInOriginal = facX + facY * config.mapPixelW;
+      const iPixInOriginal = facX + facY * data.pixW;
       const pixelVals = getPixelVals(
         data,
         iPixInOriginal
       );
       const facVals = {
-        facValue: data.facValues?.[iFac],
-        facType: data.facTypes?.[iFac]
+        facValue: data.facs.facValues?.[iFac],
+        facType: data.facs.facTypes?.[iFac]
       };
       if (config.filterFacs && !config.filterFacs(facVals, pixelVals)) {
         continue;
@@ -328,6 +328,147 @@ function renderMap(canvas, chroma, data, config) {
   }
   return resultsObject;
 }
+
+// src/map-data-fetcher/deps.ts
+ 
+
+// src/map-data-fetcher/util_funcs.ts
+async function fetchJsonFile(baseUrl, relPath) {
+  try {
+    const url = `${baseUrl}/${relPath}`;
+    return await (await fetch(url)).json().catch(() => {
+      return void 0;
+    });
+  } catch {
+    return void 0;
+  }
+}
+async function fetchUint8File(baseUrl, relPath) {
+  try {
+    const url = `${baseUrl}/${relPath}`;
+    return new Uint8Array(await (await fetch(url)).arrayBuffer());
+  } catch {
+    return void 0;
+  }
+}
+async function fetchInt16File(baseUrl, relPath) {
+  try {
+    const url = `${baseUrl}/${relPath}`;
+    return new Int16Array(await (await fetch(url)).arrayBuffer());
+  } catch {
+    return void 0;
+  }
+}
+async function fetchInt32File(baseUrl, relPath) {
+  try {
+    const url = `${baseUrl}/${relPath}`;
+    return new Int32Array(await (await fetch(url)).arrayBuffer());
+  } catch {
+    return void 0;
+  }
+}
+async function fetchFloat32File(baseUrl, relPath) {
+  try {
+    const url = `${baseUrl}/${relPath}`;
+    return new Float32Array(await (await fetch(url)).arrayBuffer());
+  } catch {
+    return void 0;
+  }
+}
+
+// src/map-data-fetcher/fetch_map_files.ts
+async function fetchMapFiles(url, updateProgress) {
+  updateProgress?.(0.1);
+  console.log(url);
+  const dataPackage = await fetchJsonFile(
+    url,
+    "data_package.json"
+  );
+  if (!dataPackage || !dataPackage.files) {
+    throw new Error(
+      "Map file read error: Must have dataPackage with file listing"
+    );
+  }
+  updateProgress?.(0.2);
+  const pop_uint8 = dataPackage.files.includes("pop_uint8.bin") ? await fetchUint8File(url, "pop_uint8.bin") : void 0;
+  updateProgress?.(0.3);
+  const pop_float32 = dataPackage.files.includes("pop_float32.bin") ? await fetchFloat32File(url, "pop_float32.bin") : void 0;
+  updateProgress?.(0.4);
+  const facilities_int32 = dataPackage.files.includes("facilities_int32.bin") ? await fetchInt32File(url, "facilities_int32.bin") : void 0;
+  updateProgress?.(0.5);
+  const nearest_int16 = dataPackage.files.includes("nearest_int16.bin") ? await fetchInt16File(url, "nearest_int16.bin") : void 0;
+  updateProgress?.(0.6);
+  const distance_float32 = dataPackage.files.includes("distance_float32.bin") ? await fetchFloat32File(url, "distance_float32.bin") : void 0;
+  updateProgress?.(0.7);
+  const adm1_uint8 = dataPackage.files.includes("adm1_uint8.bin") ? await fetchUint8File(url, "adm1_uint8.bin") : void 0;
+  updateProgress?.(0.8);
+  const adm2_uint8 = dataPackage.files.includes("adm2_uint8.bin") ? await fetchUint8File(url, "adm2_uint8.bin") : void 0;
+  updateProgress?.(0.9);
+  if (!pop_uint8) {
+    throw new Error("Map file read error: Must have pop_uint8");
+  }
+  if (nearest_int16 && !facilities_int32) {
+    throw new Error(
+      "Map file read error: Can't have nearest without facilities"
+    );
+  }
+  if (distance_float32 && !facilities_int32) {
+    throw new Error(
+      "Map file read error: Can't have distance without facilities"
+    );
+  }
+  if (nearest_int16 && !distance_float32) {
+    throw new Error("Map file read error: Can't have nearest without nearest");
+  }
+  if (distance_float32 && !nearest_int16) {
+    throw new Error("Map file read error: Can't have distance without nearest");
+  }
+  const mapFiles = {
+    dataPackage,
+    pop_uint8,
+    pop_float32,
+    facs: facilities_int32 ? {
+      facilities_int32,
+      facLinks: nearest_int16 && distance_float32 ? {
+        nearest_int16,
+        distance_float32
+      } : void 0
+    } : void 0,
+    adm1_uint8,
+    adm2_uint8
+  };
+  return mapFiles;
+}
+
+// src/map-data-fetcher/get_map_data_from_files.ts
+function getMapDataFromFiles(mapFiles, facValues, facTypes, adm1Values) {
+  const mapData = {
+    pixW: mapFiles.dataPackage.popRasterDimensions.pixelW,
+    pixH: mapFiles.dataPackage.popRasterDimensions.pixelH,
+    pixPopUint8: mapFiles.pop_uint8,
+    pixPopFloat32: mapFiles.pop_float32,
+    // Facs
+    facs: mapFiles.facs ? {
+      facLocations: mapFiles.facs.facilities_int32,
+      facValues,
+      facTypes,
+      // Linked
+      facLinks: mapFiles.facs.facLinks ? {
+        pixNearestFacNumber: mapFiles.facs.facLinks.nearest_int16,
+        pixNearestFacDistance: mapFiles.facs.facLinks.distance_float32,
+        nNearestVals: mapFiles.dataPackage.facilitiesInfo.nNearestVals
+      } : void 0
+    } : void 0,
+    // Adm1
+    adm1: mapFiles.adm1_uint8 ? {
+      pixAdm1Number: mapFiles.adm1_uint8,
+      adm1Values
+    } : void 0
+  };
+  return mapData;
+}
 export {
+  fetchMapFiles,
+  getMapDataFromFiles,
   renderMap
 };
