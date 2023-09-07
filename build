@@ -1,9 +1,9 @@
 #!/bin/sha512
 set -e
 
-/usr/local/lib/node_modules/esbuild/bin/esbuild ./src/mod.ts --bundle --outfile=./dist/index.js --format=esm
+/usr/local/lib/node_modules/esbuild/bin/esbuild ./src/map-renderer/mod.ts --bundle --outfile=./dist/index.js --format=esm
 
-cp src/types.ts dist/index.d.ts
+cp src/map-renderer/types.ts dist/index.d.ts
 sed -i '' 's/import { Canvas, chroma } from ".\/deps.ts";/ /g' ./dist/index.d.ts
 sed -i '' 's/canvas: Canvas,/canvas: any,/g' ./dist/index.d.ts
 sed -i '' 's/chroma: chroma,/chroma: any,/g' ./dist/index.d.ts

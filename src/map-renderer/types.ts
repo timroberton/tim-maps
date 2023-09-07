@@ -15,8 +15,12 @@ export type TimMapData<FacValue, FacType, Adm1Value> = {
   facLocations?: Int32Array;
   facValues?: FacValue[];
   facTypes?: FacType[];
-  pixNearestFacNumber?: Int32Array;
-  pixNearestFacDistance?: Float32Array;
+  // Linked
+  linkedFacs?: {
+    pixNearestFacNumber: Int16Array;
+    pixNearestFacDistance: Float32Array;
+    nNearestVals: number;
+  };
   // Adm1
   pixAdm1Number?: Uint8Array;
   adm1Values?: Adm1Value[];
@@ -87,11 +91,16 @@ export type GetResultsConfig = {
 
 export type PixelVals<FacValue, FacType, Adm1Value> = {
   popFloat32?: number;
-  // Fac
-  nearestFacIndex?: number;
-  nearestFacDistance?: number;
-  nearestFacValue?: FacValue;
-  nearestFacType?: FacType;
+  // Linked facs
+  nearestFacs: (
+    | {
+        facIndex: number;
+        facDistance: number;
+        facValue?: FacValue;
+        facType?: FacType;
+      }
+    | "nofac"
+  )[];
   // Adm1
   adm1Index?: number;
   adm1Value?: Adm1Value;
