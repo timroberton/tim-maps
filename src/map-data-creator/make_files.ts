@@ -78,6 +78,7 @@ export async function makeFiles(meta: Meta) {
         meta.outputDirAbsolutePath,
         meta.absolutePathToCopyOutputFilesTo
       );
+      console.log("All files copied to", meta.absolutePathToCopyOutputFilesTo);
     } else {
       for (let i = 0; i < meta.absolutePathToCopyOutputFilesTo.length; i++) {
         await Deno.remove(meta.absolutePathToCopyOutputFilesTo[i], {
@@ -85,6 +86,10 @@ export async function makeFiles(meta: Meta) {
         });
         await copy(
           meta.outputDirAbsolutePath,
+          meta.absolutePathToCopyOutputFilesTo[i]
+        );
+        console.log(
+          "All files copied to",
           meta.absolutePathToCopyOutputFilesTo[i]
         );
       }
