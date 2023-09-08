@@ -11,6 +11,7 @@ export type MapFiles = {
       nearest_int16: Int16Array;
       distance_float32: Float32Array;
     };
+    facilityInfo?: any[];
   };
   adm1_uint8?: Uint8Array;
   adm2_uint8?: Uint8Array;
@@ -21,9 +22,17 @@ export declare function fetchMapFiles(
   updateProgress?: (pct: number) => void
 ): Promise<MapFiles>;
 
-export declare function getMapDataFromFiles<FacValue, FacType, Adm1Value>(
+export declare function getMapDataFromFiles<
+  FacValue,
+  FacType,
+  Adm1Value,
+  Adm2Value
+>(
   mapFiles: MapFiles,
-  facValues: FacValue[] | undefined,
-  facTypes: FacType[] | undefined,
-  adm1Values: Adm1Value[] | undefined
-): TimMapData<FacValue, FacType, Adm1Value>;
+  valueFiles: {
+    facValuesOverride?: FacValue[];
+    facTypes?: FacType[];
+    adm1Values?: Adm1Value[];
+    adm2Values?: Adm2Value[];
+  }
+): TimMapData<FacValue, FacType, Adm1Value, Adm2Value>;

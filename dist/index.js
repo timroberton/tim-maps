@@ -404,6 +404,8 @@ async function fetchMapFiles(url, updateProgress) {
   updateProgress?.(0.8);
   const adm2_uint8 = dataPackage.files.includes("adm2_uint8.bin") ? await fetchUint8File(url, "adm2_uint8.bin") : void 0;
   updateProgress?.(0.9);
+  const facilityInfo = dataPackage.files.includes("facility_info.json") ? await fetchJsonFile(url, "facility_info.json") : void 0;
+  updateProgress?.(1);
   if (!pop_uint8) {
     throw new Error("Map file read error: Must have pop_uint8");
   }
@@ -432,7 +434,8 @@ async function fetchMapFiles(url, updateProgress) {
       facLinks: nearest_int16 && distance_float32 ? {
         nearest_int16,
         distance_float32
-      } : void 0
+      } : void 0,
+      facilityInfo
     } : void 0,
     adm1_uint8,
     adm2_uint8
@@ -441,7 +444,7 @@ async function fetchMapFiles(url, updateProgress) {
 }
 
 // src/map-data-fetcher/get_map_data_from_files.ts
-function getMapDataFromFiles(mapFiles, facValues, facTypes, adm1Values) {
+function getMapDataFromFiles(mapFiles, valueFiles) {
   const mapData = {
     pixW: mapFiles.dataPackage.popRasterDimensions.pixelW,
     pixH: mapFiles.dataPackage.popRasterDimensions.pixelH,
@@ -450,8 +453,8 @@ function getMapDataFromFiles(mapFiles, facValues, facTypes, adm1Values) {
     // Facs
     facs: mapFiles.facs ? {
       facLocations: mapFiles.facs.facilities_int32,
-      facValues,
-      facTypes,
+      facValues: valueFiles.facValuesOverride ?? mapFiles.facs.facilityInfo,
+      facTypes: valueFiles.facTypes,
       // Linked
       facLinks: mapFiles.facs.facLinks ? {
         pixNearestFacNumber: mapFiles.facs.facLinks.nearest_int16,
@@ -462,7 +465,12 @@ function getMapDataFromFiles(mapFiles, facValues, facTypes, adm1Values) {
     // Adm1
     adm1: mapFiles.adm1_uint8 ? {
       pixAdm1Number: mapFiles.adm1_uint8,
-      adm1Values
+      adm1Values: valueFiles.adm1Values
+    } : void 0,
+    // Adm2
+    adm2: mapFiles.adm2_uint8 ? {
+      pixAdm2Number: mapFiles.adm2_uint8,
+      adm2Values: valueFiles.adm2Values
     } : void 0
   };
   return mapData;

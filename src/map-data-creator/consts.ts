@@ -16,6 +16,9 @@ export const _FILENAME_FRONTEND_ADM2_BIN_UNCHECKED =
 export const _FILENAME_FRONTEND_ADM1_BIN = "adm1_uint8.bin";
 export const _FILENAME_FRONTEND_ADM2_BIN = "adm2_uint8.bin";
 
+// Facility Info
+export const _FILENAME_FACILITY_INFO = "facility_info.json";
+
 // Data JSON
 export const _FILENAME_DATAPACKAGE = "data_package.json";
 export const _FILENAME_DATAPACKAGE_TEMP_POPDIMENSIONS =

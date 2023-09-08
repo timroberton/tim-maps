@@ -8,7 +8,7 @@ export type PointStyle =
   | "rect"
   | "triangle";
 
-export type TimMapData<FacValue, FacType, Adm1Value> = {
+export type TimMapData<FacValue, FacType, Adm1Value, Adm2Value> = {
   pixPopUint8: Uint8Array;
   pixPopFloat32?: Float32Array;
   pixW: number;
@@ -30,9 +30,20 @@ export type TimMapData<FacValue, FacType, Adm1Value> = {
     pixAdm1Number: Uint8Array;
     adm1Values?: Adm1Value[];
   };
+  // Adm1
+  adm2?: {
+    pixAdm2Number: Uint8Array;
+    adm2Values?: Adm2Value[];
+  };
 };
 
-export type TimMapResults<FacValue, FacType, Adm1Value, ResutsObject> = {
+export type TimMapResults<
+  FacValue,
+  FacType,
+  Adm1Value,
+  Adm2Value,
+  ResutsObject
+> = {
   startingObject: ResutsObject;
   popAccumulator?: (
     currentObject: ResutsObject,
@@ -45,7 +56,13 @@ export type TimMapResults<FacValue, FacType, Adm1Value, ResutsObject> = {
   ) => void;
 };
 
-export type RenderMapConfig<FacValue, FacType, Adm1Value, ResutsObject> = {
+export type RenderMapConfig<
+  FacValue,
+  FacType,
+  Adm1Value,
+  Adm2Value,
+  ResutsObject
+> = {
   crop?: {
     x: number;
     y: number;
@@ -86,7 +103,13 @@ export type RenderMapConfig<FacValue, FacType, Adm1Value, ResutsObject> = {
     facVals: FacVals<FacValue, FacType>,
     pixelVals: PixelVals<FacValue, FacType, Adm1Value>
   ) => number;
-  results?: TimMapResults<FacValue, FacType, Adm1Value, ResutsObject>;
+  results?: TimMapResults<
+    FacValue,
+    FacType,
+    Adm1Value,
+    Adm2Value,
+    ResutsObject
+  >;
 };
 
 export type GetResultsConfig = {
@@ -116,11 +139,17 @@ export type FacVals<FacValue, FacType> = {
   facType?: FacType;
 };
 
-export declare function renderMap<FacValue, FacType, Adm1Value, ResutsObject>(
+export declare function renderMap<
+  FacValue,
+  FacType,
+  Adm1Value,
+  Adm2Value,
+  ResutsObject
+>(
   canvas: any,
   chroma: any,
-  data: TimMapData<FacValue, FacType, Adm1Value>,
-  config: RenderMapConfig<FacValue, FacType, Adm1Value, ResutsObject>
+  data: TimMapData<FacValue, FacType, Adm1Value, Adm2Value>,
+  config: RenderMapConfig<FacValue, FacType, Adm1Value, Adm2Value, ResutsObject>
 ): ResutsObject | undefined;
 
 
@@ -173,6 +202,7 @@ export type FacilitiesInputInfo =
         csvVar: string;
         include: string[];
       };
+      facilityInfoVars?: string[];
     }
   | {
       format: "json";
@@ -183,6 +213,7 @@ export type FacilitiesInputInfo =
         jsonProp: string;
         include: string[];
       };
+      facilityInfoVars?: string[];
     };
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -221,6 +252,7 @@ export type FacilitiesInfo = {
   nFacilitiesInPopRaster: number;
   specifiedFacTypes: string[];
   nNearestVals: number;
+  facilityInfoHasBeenIncluded: boolean;
 };
 
 
@@ -238,6 +270,7 @@ export type MapFiles = {
       nearest_int16: Int16Array;
       distance_float32: Float32Array;
     };
+    facilityInfo?: any[];
   };
   adm1_uint8?: Uint8Array;
   adm2_uint8?: Uint8Array;
@@ -248,9 +281,17 @@ export declare function fetchMapFiles(
   updateProgress?: (pct: number) => void
 ): Promise<MapFiles>;
 
-export declare function getMapDataFromFiles<FacValue, FacType, Adm1Value>(
+export declare function getMapDataFromFiles<
+  FacValue,
+  FacType,
+  Adm1Value,
+  Adm2Value
+>(
   mapFiles: MapFiles,
-  facValues: FacValue[] | undefined,
-  facTypes: FacType[] | undefined,
-  adm1Values: Adm1Value[] | undefined
-): TimMapData<FacValue, FacType, Adm1Value>;
+  valueFiles: {
+    facValuesOverride?: FacValue[];
+    facTypes?: FacType[];
+    adm1Values?: Adm1Value[];
+    adm2Values?: Adm2Value[];
+  }
+): TimMapData<FacValue, FacType, Adm1Value, Adm2Value>;

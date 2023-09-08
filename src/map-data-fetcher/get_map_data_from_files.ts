@@ -1,13 +1,16 @@
 import { TimMapData } from "./deps.ts";
 import { MapFiles } from "./types.ts";
 
-export function getMapDataFromFiles<FacValue, FacType, Adm1Value>(
+export function getMapDataFromFiles<FacValue, FacType, Adm1Value, Adm2Value>(
   mapFiles: MapFiles,
-  facValues: FacValue[] | undefined,
-  facTypes: FacType[] | undefined,
-  adm1Values: Adm1Value[] | undefined
-): TimMapData<FacValue, FacType, Adm1Value> {
-  const mapData: TimMapData<FacValue, FacType, Adm1Value> = {
+  valueFiles: {
+    facValuesOverride?: FacValue[];
+    facTypes?: FacType[];
+    adm1Values?: Adm1Value[];
+    adm2Values?: Adm2Value[];
+  }
+): TimMapData<FacValue, FacType, Adm1Value, Adm2Value> {
+  const mapData: TimMapData<FacValue, FacType, Adm1Value, Adm2Value> = {
     pixW: mapFiles.dataPackage.popRasterDimensions.pixelW,
     pixH: mapFiles.dataPackage.popRasterDimensions.pixelH,
     pixPopUint8: mapFiles.pop_uint8,
@@ -16,8 +19,8 @@ export function getMapDataFromFiles<FacValue, FacType, Adm1Value>(
     facs: mapFiles.facs
       ? {
           facLocations: mapFiles.facs.facilities_int32,
-          facValues,
-          facTypes,
+          facValues: valueFiles.facValuesOverride ?? mapFiles.facs.facilityInfo,
+          facTypes: valueFiles.facTypes,
           // Linked
           facLinks: mapFiles.facs.facLinks
             ? {
@@ -32,7 +35,14 @@ export function getMapDataFromFiles<FacValue, FacType, Adm1Value>(
     adm1: mapFiles.adm1_uint8
       ? {
           pixAdm1Number: mapFiles.adm1_uint8,
-          adm1Values,
+          adm1Values: valueFiles.adm1Values,
+        }
+      : undefined,
+    // Adm2
+    adm2: mapFiles.adm2_uint8
+      ? {
+          pixAdm2Number: mapFiles.adm2_uint8,
+          adm2Values: valueFiles.adm2Values,
         }
       : undefined,
   };

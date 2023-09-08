@@ -3,11 +3,17 @@ import type { Canvas, chroma } from "./deps.ts";
 import { getPixelVals } from "./get_pixel_vals.ts";
 import { FacVals, PixelVals, RenderMapConfig, TimMapData } from "./types.ts";
 
-export function renderMap<FacValue, FacType, Adm1Value, ResutsObject>(
+export function renderMap<
+  FacValue,
+  FacType,
+  Adm1Value,
+  Adm2Value,
+  ResutsObject
+>(
   canvas: Canvas | undefined,
   chroma: chroma | undefined,
-  data: TimMapData<FacValue, FacType, Adm1Value>,
-  config: RenderMapConfig<FacValue, FacType, Adm1Value, ResutsObject>
+  data: TimMapData<FacValue, FacType, Adm1Value, Adm2Value>,
+  config: RenderMapConfig<FacValue, FacType, Adm1Value, Adm2Value, ResutsObject>
 ): ResutsObject | undefined {
   const nFacilities = (data.facs?.facLocations.length ?? 0) / 2;
   const pixelPad = config.mapPixelPad ?? 0;

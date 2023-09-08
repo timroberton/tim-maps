@@ -46,6 +46,7 @@ export type FacilitiesInputInfo =
         csvVar: string;
         include: string[];
       };
+      facilityInfoVars?: string[];
     }
   | {
       format: "json";
@@ -56,6 +57,7 @@ export type FacilitiesInputInfo =
         jsonProp: string;
         include: string[];
       };
+      facilityInfoVars?: string[];
     };
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -94,4 +96,5 @@ export type FacilitiesInfo = {
   nFacilitiesInPopRaster: number;
   specifiedFacTypes: string[];
   nNearestVals: number;
+  facilityInfoHasBeenIncluded: boolean;
 };

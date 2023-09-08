@@ -2,8 +2,7 @@ import {
   _FILENAME_DATAPACKAGE_TEMP_POPDIMENSIONS,
   _GLOBAL_FOLDER,
 } from "./consts.ts";
-import { PopDimensions } from "./deps.ts";
-import { Meta } from "./types.ts";
+import { Meta, PopDimensions } from "./types.ts";
 
 export async function getPopDimensions(
   subFolderPath: string

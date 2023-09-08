@@ -1,5 +1,6 @@
 import {
   _FILENAME_DATAPACKAGE_TEMP_FACILITIESINFO,
+  _FILENAME_FACILITY_INFO,
   _FILENAME_FRONTEND_DISTANCE_FLOAT32_FAC_BIN,
   _FILENAME_FRONTEND_FACILITIES_INT32_BIN,
   _FILENAME_FRONTEND_NEAREST_INT16_BIN,
@@ -111,6 +112,10 @@ export async function makeFacBinFilesForSubFolder(
     facLocationsBinData[i * 2] = x;
     facLocationsBinData[i * 2 + 1] = y;
 
+    f.x = x;
+    f.y = y;
+    f.isInThisRaster = true;
+
     facilitiesInThisRaster.push({
       number: i + 1,
       lat: f.lat,
@@ -173,12 +178,18 @@ export async function makeFacBinFilesForSubFolder(
     `${subFolderPath}/${_FILENAME_FRONTEND_DISTANCE_FLOAT32_FAC_BIN}`,
     new Uint8Array(distanceBinData.buffer)
   );
-
+  if (meta.facilities.facilityInfoVars) {
+    await Deno.writeTextFile(
+      `${subFolderPath}/${_FILENAME_FACILITY_INFO}`,
+      JSON.stringify(facData)
+    );
+  }
   const facilitiesInfo: FacilitiesInfo = {
     nFacilitiesInDataset: facData.length,
     nFacilitiesInPopRaster: facilitiesInThisRaster.length,
     specifiedFacTypes,
     nNearestVals,
+    facilityInfoHasBeenIncluded: !!meta.facilities.facilityInfoVars,
   };
   await Deno.writeTextFile(
     `${subFolderPath}/${_FILENAME_DATAPACKAGE_TEMP_FACILITIESINFO}`,

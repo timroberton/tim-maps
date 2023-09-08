@@ -3,6 +3,7 @@ import {
   _FILENAME_DATAPACKAGE_TEMP_ADM,
   _FILENAME_DATAPACKAGE_TEMP_FACILITIESINFO,
   _FILENAME_DATAPACKAGE_TEMP_POPDIMENSIONS,
+  _FILENAME_FACILITY_INFO,
   _FILENAME_FRONTEND_ADM1_BIN,
   _FILENAME_FRONTEND_ADM2_BIN,
   _FILENAME_FRONTEND_DISTANCE_FLOAT32_FAC_BIN,
@@ -50,6 +51,9 @@ export async function makeDataPackage(meta: Meta, subFolder: string) {
   }
   if (admInfo.hasAdm2) {
     files.push(_FILENAME_FRONTEND_ADM2_BIN);
+  }
+  if (facilitiesInfo.facilityInfoHasBeenIncluded) {
+    files.push(_FILENAME_FACILITY_INFO);
   }
 
   const dataPackage: DataPackage = {

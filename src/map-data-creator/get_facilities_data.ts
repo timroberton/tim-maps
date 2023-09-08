@@ -6,6 +6,9 @@ export async function getFacilitiesData(meta: Meta): Promise<
     number: number;
     lat: number | undefined;
     lon: number | undefined;
+    x: number;
+    y: number;
+    isInThisRaster: boolean;
     facType: string | "unknown";
   }[]
 > {
@@ -21,7 +24,7 @@ export async function getFacilitiesData(meta: Meta): Promise<
       );
     }
     return facDataRaw.map((fRaw, i) => {
-      return {
+      const baseObj = {
         number: i + 1,
         lat: fRaw[facilitiesInfoCsv.csvLatVar]
           ? Number(fRaw[facilitiesInfoCsv.csvLatVar])
@@ -33,7 +36,15 @@ export async function getFacilitiesData(meta: Meta): Promise<
           ? String(fRaw[facilitiesInfoCsv.specifiedFacTypes.csvVar]) ??
             "unknown"
           : "unknown",
+        x: -1,
+        y: -1,
+        isInThisRaster: false,
       };
+      facilitiesInfoCsv.facilityInfoVars?.forEach((keepVar) => {
+        //@ts-ignore
+        baseObj[keepVar] = fRaw[keepVar];
+      });
+      return baseObj;
     });
   } else {
     const facilitiesInfoJson = meta.facilities;
@@ -42,7 +53,7 @@ export async function getFacilitiesData(meta: Meta): Promise<
     );
     const facDataRaw: any[] = JSON.parse(facDataStr);
     return facDataRaw.map((fRaw, i) => {
-      return {
+      const baseObj = {
         number: i + 1,
         lat: fRaw[facilitiesInfoJson.jsonLatProp]
           ? Number(fRaw[facilitiesInfoJson.jsonLatProp])
@@ -54,7 +65,15 @@ export async function getFacilitiesData(meta: Meta): Promise<
           ? String(fRaw[facilitiesInfoJson.specifiedFacTypes.jsonProp]) ??
             "unknown"
           : "unknown",
+        x: -1,
+        y: -1,
+        isInThisRaster: false,
       };
+      facilitiesInfoJson.facilityInfoVars?.forEach((keepProp) => {
+        //@ts-ignore
+        baseObj[keepProp] = fRaw[keepProp];
+      });
+      return baseObj;
     });
   }
 }

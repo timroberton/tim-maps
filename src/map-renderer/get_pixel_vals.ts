@@ -1,7 +1,7 @@
 import { PixelVals, TimMapData } from "./types.ts";
 
-export function getPixelVals<FacValue, FacType, Adm1Value>(
-  data: TimMapData<FacValue, FacType, Adm1Value>,
+export function getPixelVals<FacValue, FacType, Adm1Value, Adm2Value>(
+  data: TimMapData<FacValue, FacType, Adm1Value, Adm2Value>,
   iPixInOriginal: number
 ): PixelVals<FacValue, FacType, Adm1Value> {
   const hasAdm1Number =

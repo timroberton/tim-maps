@@ -52,6 +52,10 @@ export async function fetchMapFiles(
     ? await fetchUint8File(url, "adm2_uint8.bin")
     : undefined;
   updateProgress?.(0.9);
+  const facilityInfo = dataPackage.files.includes("facility_info.json")
+    ? await fetchJsonFile<unknown[]>(url, "facility_info.json")
+    : undefined;
+  updateProgress?.(1);
 
   if (!pop_uint8) {
     throw new Error("Map file read error: Must have pop_uint8");
@@ -87,6 +91,7 @@ export async function fetchMapFiles(
                   distance_float32,
                 }
               : undefined,
+          facilityInfo,
         }
       : undefined,
     adm1_uint8,
