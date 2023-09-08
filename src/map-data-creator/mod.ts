@@ -1,3 +1,3 @@
 export * from "./types.ts";
 
-export { makeFiles } from "./make_files.ts";
+export { makeMapFiles } from "./make_map_files.ts";

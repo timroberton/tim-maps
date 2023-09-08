@@ -9,7 +9,7 @@ import { getMainRScriptForAdm0ScaledTif } from "./get_main_r_script_for_adm0_sca
 import { AdmSelection, Meta } from "./types.ts";
 import { getOutputGlobalsPath, getOutputSubFolderPath } from "./util_funcs.ts";
 
-export async function makeFiles(meta: Meta) {
+export async function makeMapFiles(meta: Meta) {
   if (meta.adm1) {
     if (meta.adm1.nFeatures > 254 || meta.adm1.nFeatures > 254) {
       throw new Error("Tim's program only allows for 254 features at most");
