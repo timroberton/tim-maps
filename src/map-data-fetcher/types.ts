@@ -29,10 +29,10 @@ export declare function getMapDataFromFiles<
   Adm2Value
 >(
   mapFiles: MapFiles,
-  valueFiles: {
+  valueFileOverrides: {
     facValuesOverride?: FacValue[];
-    facTypes?: FacType[];
-    adm1Values?: Adm1Value[];
-    adm2Values?: Adm2Value[];
+    facTypesOverride?: FacType[];
+    adm1ValuesOverride?: Adm1Value[];
+    adm2ValuesOverride?: Adm2Value[];
   }
 ): TimMapData<FacValue, FacType, Adm1Value, Adm2Value>;

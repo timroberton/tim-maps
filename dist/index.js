@@ -444,7 +444,7 @@ async function fetchMapFiles(url, updateProgress) {
 }
 
 // src/map-data-fetcher/get_map_data_from_files.ts
-function getMapDataFromFiles(mapFiles, valueFiles) {
+function getMapDataFromFiles(mapFiles, valueFileOverrides) {
   const mapData = {
     pixW: mapFiles.dataPackage.popRasterDimensions.pixelW,
     pixH: mapFiles.dataPackage.popRasterDimensions.pixelH,
@@ -453,8 +453,8 @@ function getMapDataFromFiles(mapFiles, valueFiles) {
     // Facs
     facs: mapFiles.facs ? {
       facLocations: mapFiles.facs.facilities_int32,
-      facValues: valueFiles.facValuesOverride ?? mapFiles.facs.facilityInfo,
-      facTypes: valueFiles.facTypes,
+      facValues: valueFileOverrides.facValuesOverride ?? mapFiles.facs.facilityInfo,
+      facTypes: valueFileOverrides.facTypesOverride,
       // Linked
       facLinks: mapFiles.facs.facLinks ? {
         pixNearestFacNumber: mapFiles.facs.facLinks.nearest_int16,
@@ -465,12 +465,12 @@ function getMapDataFromFiles(mapFiles, valueFiles) {
     // Adm1
     adm1: mapFiles.adm1_uint8 ? {
       pixAdm1Number: mapFiles.adm1_uint8,
-      adm1Values: valueFiles.adm1Values
+      adm1Values: valueFileOverrides.adm1ValuesOverride
     } : void 0,
     // Adm2
     adm2: mapFiles.adm2_uint8 ? {
       pixAdm2Number: mapFiles.adm2_uint8,
-      adm2Values: valueFiles.adm2Values
+      adm2Values: valueFileOverrides.adm2ValuesOverride
     } : void 0
   };
   return mapData;

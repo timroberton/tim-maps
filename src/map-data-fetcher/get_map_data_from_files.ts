@@ -3,11 +3,11 @@ import { MapFiles } from "./types.ts";
 
 export function getMapDataFromFiles<FacValue, FacType, Adm1Value, Adm2Value>(
   mapFiles: MapFiles,
-  valueFiles: {
+  valueFileOverrides: {
     facValuesOverride?: FacValue[];
-    facTypes?: FacType[];
-    adm1Values?: Adm1Value[];
-    adm2Values?: Adm2Value[];
+    facTypesOverride?: FacType[];
+    adm1ValuesOverride?: Adm1Value[];
+    adm2ValuesOverride?: Adm2Value[];
   }
 ): TimMapData<FacValue, FacType, Adm1Value, Adm2Value> {
   const mapData: TimMapData<FacValue, FacType, Adm1Value, Adm2Value> = {
@@ -19,8 +19,9 @@ export function getMapDataFromFiles<FacValue, FacType, Adm1Value, Adm2Value>(
     facs: mapFiles.facs
       ? {
           facLocations: mapFiles.facs.facilities_int32,
-          facValues: valueFiles.facValuesOverride ?? mapFiles.facs.facilityInfo,
-          facTypes: valueFiles.facTypes,
+          facValues:
+            valueFileOverrides.facValuesOverride ?? mapFiles.facs.facilityInfo,
+          facTypes: valueFileOverrides.facTypesOverride,
           // Linked
           facLinks: mapFiles.facs.facLinks
             ? {
@@ -35,14 +36,14 @@ export function getMapDataFromFiles<FacValue, FacType, Adm1Value, Adm2Value>(
     adm1: mapFiles.adm1_uint8
       ? {
           pixAdm1Number: mapFiles.adm1_uint8,
-          adm1Values: valueFiles.adm1Values,
+          adm1Values: valueFileOverrides.adm1ValuesOverride,
         }
       : undefined,
     // Adm2
     adm2: mapFiles.adm2_uint8
       ? {
           pixAdm2Number: mapFiles.adm2_uint8,
-          adm2Values: valueFiles.adm2Values,
+          adm2Values: valueFileOverrides.adm2ValuesOverride,
         }
       : undefined,
   };
