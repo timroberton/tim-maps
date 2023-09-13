@@ -22,7 +22,7 @@ export type TimMapData<FacValue, FacType, Adm1Value, Adm2Value> = {
     facLinks?: {
       pixNearestFacNumber: Int16Array;
       pixNearestFacDistance: Float32Array;
-      nNearestVals: number;
+      strideNearestFacs: number;
     };
   };
   // Adm1
@@ -80,6 +80,7 @@ export type RenderMapConfig<
   ) => boolean;
   //
   pixelColor?: string;
+  pixelTransparency255?: number;
   pointColor?: string;
   pointStyle?: PointStyle;
   pointRadius?: number;
@@ -87,6 +88,9 @@ export type RenderMapConfig<
   getPixelColor?: (
     pixelVals: PixelVals<FacValue, FacType, Adm1Value>
   ) => string;
+  getPixelTransparency255?: (
+    pixelVals: PixelVals<FacValue, FacType, Adm1Value>
+  ) => number;
   getPointColor?: (
     facVals: FacVals<FacValue, FacType>,
     pixelVals: PixelVals<FacValue, FacType, Adm1Value>
@@ -123,20 +127,20 @@ export type PixelVals<FacValue, FacType, Adm1Value> = {
     | {
         facIndex: number;
         facDistance: number;
-        facValue?: FacValue;
-        facType?: FacType;
+        facValue: FacValue | undefined;
+        facType: FacType | undefined;
       }
     | "nofac"
   )[];
   // Adm1
-  adm1Index?: number;
-  adm1Value?: Adm1Value;
+  adm1Index: number | undefined;
+  adm1Value: Adm1Value | undefined;
 };
 
 export type FacVals<FacValue, FacType> = {
   // Fac
-  facValue?: FacValue;
-  facType?: FacType;
+  facValue: FacValue | undefined;
+  facType: FacType | undefined;
 };
 
 export declare function renderMap<
@@ -251,7 +255,7 @@ export type FacilitiesInfo = {
   nFacilitiesInDataset: number;
   nFacilitiesInPopRaster: number;
   specifiedFacTypes: string[];
-  nNearestVals: number;
+  strideNearestFacs: number;
   facilityInfoHasBeenIncluded: boolean;
 };
 

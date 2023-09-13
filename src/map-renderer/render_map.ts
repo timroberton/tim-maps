@@ -59,50 +59,57 @@ export function renderMap<
       if (data.facs.facLinks) {
         if (
           data.facs.facLinks.pixNearestFacNumber.length !==
-          data.pixPopUint8.length * data.facs.facLinks.nNearestVals
+          data.pixPopUint8.length * data.facs.facLinks.strideNearestFacs
         ) {
           throw new Error("pixNearestFacNumber not equal to pixPopUint8");
         }
         if (
           data.facs.facLinks.pixNearestFacDistance.length !==
-          data.pixPopUint8.length * data.facs.facLinks.nNearestVals
+          data.pixPopUint8.length * data.facs.facLinks.strideNearestFacs
         ) {
           throw new Error("pixNearestFacDistance not equal to pixPopUint8");
         }
-        let minFacNumber = Number.POSITIVE_INFINITY;
-        let maxFacNumber = Number.NEGATIVE_INFINITY;
+        let minFacNumber = nFacilities + 1;
+        let maxFacNumber = -1;
         data.facs.facLinks.pixNearestFacNumber.forEach((v) => {
+          if (v === -9999) {
+            return;
+          }
           minFacNumber = Math.min(v, minFacNumber);
           maxFacNumber = Math.max(v, maxFacNumber);
         });
-        if (minFacNumber !== -9999) {
-          if (minFacNumber < 1 || minFacNumber > nFacilities) {
-            throw new Error(`Bad nearest fac index - min is ${minFacNumber}`);
-          }
+        if (minFacNumber < 1 || minFacNumber > nFacilities) {
+          throw new Error(
+            `Bad nearest fac number - min is ${minFacNumber} but there are ${nFacilities} facilities`
+          );
         }
-        if (maxFacNumber !== -9999) {
-          if (maxFacNumber < 1 || maxFacNumber > nFacilities) {
-            throw new Error(`Bad nearest fac index - max is ${maxFacNumber}`);
-          }
+        if (maxFacNumber < 1 || maxFacNumber > nFacilities) {
+          throw new Error(
+            `Bad nearest fac number - max is ${maxFacNumber} but there are ${nFacilities} facilities`
+          );
         }
       }
     }
     if (data.adm1 && data.adm1.adm1Values) {
       const nAdm1s = data.adm1.adm1Values.length;
-      let minAdm1Index = Number.POSITIVE_INFINITY;
-      let maxAdm1Index = Number.NEGATIVE_INFINITY;
+      let minAdm1Number = nAdm1s + 1;
+      let maxAdm1Number = -1;
       data.adm1.pixAdm1Number.forEach((v) => {
-        if (v === 255) {
+        if (v === 0) {
           return;
         }
-        minAdm1Index = Math.min(v - 1, minAdm1Index);
-        maxAdm1Index = Math.max(v - 1, maxAdm1Index);
+        minAdm1Number = Math.min(v, minAdm1Number);
+        maxAdm1Number = Math.max(v, maxAdm1Number);
       });
-      if (minAdm1Index < 0 || minAdm1Index > nAdm1s - 1) {
-        throw new Error(`Bad adm1 index - min is ${minAdm1Index}`);
+      if (minAdm1Number < 1 || minAdm1Number > nAdm1s) {
+        throw new Error(
+          `Bad adm1 number - min is ${minAdm1Number} but there are ${nAdm1s} adm1s`
+        );
       }
-      if (maxAdm1Index < 0 || maxAdm1Index > nAdm1s - 1) {
-        throw new Error(`Bad adm1 index - max is ${maxAdm1Index}`);
+      if (maxAdm1Number < 1 || maxAdm1Number > nAdm1s) {
+        throw new Error(
+          `Bad adm1 number - max is ${maxAdm1Number} but there are ${nAdm1s} adm1s`
+        );
       }
     }
   }
@@ -133,7 +140,11 @@ export function renderMap<
       if (imageData) {
         const color =
           config.getPixelColor?.(vals) ?? config.pixelColor ?? "#000000";
-        if (!color) {
+        const transparency =
+          config.getPixelTransparency255?.(vals) ??
+          config.pixelTransparency255 ??
+          data.pixPopUint8[iPixInOriginal];
+        if (!color || transparency === undefined) {
           throw new Error("What" + JSON.stringify(vals));
         }
         if (!colorMap[color]) {
@@ -143,7 +154,7 @@ export function renderMap<
         imageData.data[iImgData + 0] = colorMap[color][0];
         imageData.data[iImgData + 1] = colorMap[color][1];
         imageData.data[iImgData + 2] = colorMap[color][2];
-        imageData.data[iImgData + 3] = data.pixPopUint8[iPixInOriginal];
+        imageData.data[iImgData + 3] = transparency;
       }
     }
   }

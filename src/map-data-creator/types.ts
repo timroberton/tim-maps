@@ -95,6 +95,6 @@ export type FacilitiesInfo = {
   nFacilitiesInDataset: number;
   nFacilitiesInPopRaster: number;
   specifiedFacTypes: string[];
-  nNearestVals: number;
+  strideNearestFacs: number;
   facilityInfoHasBeenIncluded: boolean;
 };

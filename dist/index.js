@@ -148,8 +148,8 @@ function getPixelVals(data, iPixInOriginal) {
     };
   }
   const nearestFacs = [];
-  for (let i_f = 0; i_f < data.facs.facLinks.nNearestVals; i_f++) {
-    const iInNearest = iPixInOriginal * data.facs.facLinks.nNearestVals + i_f;
+  for (let i_f = 0; i_f < data.facs.facLinks.strideNearestFacs; i_f++) {
+    const iInNearest = iPixInOriginal * data.facs.facLinks.strideNearestFacs + i_f;
     const hasFacNumber = data.facs.facLinks.pixNearestFacNumber !== void 0 && data.facs.facLinks.pixNearestFacNumber[iInNearest] !== -9999;
     if (!hasFacNumber) {
       nearestFacs.push("nofac");
@@ -207,46 +207,53 @@ function renderMap(canvas, chroma, data, config) {
         throw new Error("facLocations not twice the length of facValues");
       }
       if (data.facs.facLinks) {
-        if (data.facs.facLinks.pixNearestFacNumber.length !== data.pixPopUint8.length * data.facs.facLinks.nNearestVals) {
+        if (data.facs.facLinks.pixNearestFacNumber.length !== data.pixPopUint8.length * data.facs.facLinks.strideNearestFacs) {
           throw new Error("pixNearestFacNumber not equal to pixPopUint8");
         }
-        if (data.facs.facLinks.pixNearestFacDistance.length !== data.pixPopUint8.length * data.facs.facLinks.nNearestVals) {
+        if (data.facs.facLinks.pixNearestFacDistance.length !== data.pixPopUint8.length * data.facs.facLinks.strideNearestFacs) {
           throw new Error("pixNearestFacDistance not equal to pixPopUint8");
         }
-        let minFacNumber = Number.POSITIVE_INFINITY;
-        let maxFacNumber = Number.NEGATIVE_INFINITY;
+        let minFacNumber = nFacilities + 1;
+        let maxFacNumber = -1;
         data.facs.facLinks.pixNearestFacNumber.forEach((v) => {
+          if (v === -9999) {
+            return;
+          }
           minFacNumber = Math.min(v, minFacNumber);
           maxFacNumber = Math.max(v, maxFacNumber);
         });
-        if (minFacNumber !== -9999) {
-          if (minFacNumber < 1 || minFacNumber > nFacilities) {
-            throw new Error(`Bad nearest fac index - min is ${minFacNumber}`);
-          }
+        if (minFacNumber < 1 || minFacNumber > nFacilities) {
+          throw new Error(
+            `Bad nearest fac number - min is ${minFacNumber} but there are ${nFacilities} facilities`
+          );
         }
-        if (maxFacNumber !== -9999) {
-          if (maxFacNumber < 1 || maxFacNumber > nFacilities) {
-            throw new Error(`Bad nearest fac index - max is ${maxFacNumber}`);
-          }
+        if (maxFacNumber < 1 || maxFacNumber > nFacilities) {
+          throw new Error(
+            `Bad nearest fac number - max is ${maxFacNumber} but there are ${nFacilities} facilities`
+          );
         }
       }
     }
     if (data.adm1 && data.adm1.adm1Values) {
       const nAdm1s = data.adm1.adm1Values.length;
-      let minAdm1Index = Number.POSITIVE_INFINITY;
-      let maxAdm1Index = Number.NEGATIVE_INFINITY;
+      let minAdm1Number = nAdm1s + 1;
+      let maxAdm1Number = -1;
       data.adm1.pixAdm1Number.forEach((v) => {
-        if (v === 255) {
+        if (v === 0) {
           return;
         }
-        minAdm1Index = Math.min(v - 1, minAdm1Index);
-        maxAdm1Index = Math.max(v - 1, maxAdm1Index);
+        minAdm1Number = Math.min(v, minAdm1Number);
+        maxAdm1Number = Math.max(v, maxAdm1Number);
       });
-      if (minAdm1Index < 0 || minAdm1Index > nAdm1s - 1) {
-        throw new Error(`Bad adm1 index - min is ${minAdm1Index}`);
+      if (minAdm1Number < 1 || minAdm1Number > nAdm1s) {
+        throw new Error(
+          `Bad adm1 number - min is ${minAdm1Number} but there are ${nAdm1s} adm1s`
+        );
       }
-      if (maxAdm1Index < 0 || maxAdm1Index > nAdm1s - 1) {
-        throw new Error(`Bad adm1 index - max is ${maxAdm1Index}`);
+      if (maxAdm1Number < 1 || maxAdm1Number > nAdm1s) {
+        throw new Error(
+          `Bad adm1 number - max is ${maxAdm1Number} but there are ${nAdm1s} adm1s`
+        );
       }
     }
   }
@@ -272,7 +279,8 @@ function renderMap(canvas, chroma, data, config) {
       config.results?.popAccumulator?.(resultsObject, vals);
       if (imageData) {
         const color = config.getPixelColor?.(vals) ?? config.pixelColor ?? "#000000";
-        if (!color) {
+        const transparency = config.getPixelTransparency255?.(vals) ?? config.pixelTransparency255 ?? data.pixPopUint8[iPixInOriginal];
+        if (!color || transparency === void 0) {
           throw new Error("What" + JSON.stringify(vals));
         }
         if (!colorMap[color]) {
@@ -282,7 +290,7 @@ function renderMap(canvas, chroma, data, config) {
         imageData.data[iImgData + 0] = colorMap[color][0];
         imageData.data[iImgData + 1] = colorMap[color][1];
         imageData.data[iImgData + 2] = colorMap[color][2];
-        imageData.data[iImgData + 3] = data.pixPopUint8[iPixInOriginal];
+        imageData.data[iImgData + 3] = transparency;
       }
     }
   }
@@ -378,8 +386,8 @@ async function fetchFloat32File(baseUrl, relPath) {
 
 // src/map-data-fetcher/fetch_map_files.ts
 async function fetchMapFiles(url, updateProgress) {
+  console.log("Fetching map files from", url);
   updateProgress?.(0.1);
-  console.log(url);
   const dataPackage = await fetchJsonFile(
     url,
     "data_package.json"
@@ -459,7 +467,7 @@ function getMapDataFromFiles(mapFiles, valueFileOverrides) {
       facLinks: mapFiles.facs.facLinks ? {
         pixNearestFacNumber: mapFiles.facs.facLinks.nearest_int16,
         pixNearestFacDistance: mapFiles.facs.facLinks.distance_float32,
-        nNearestVals: mapFiles.dataPackage.facilitiesInfo.nNearestVals
+        strideNearestFacs: mapFiles.dataPackage.facilitiesInfo.strideNearestFacs
       } : void 0
     } : void 0,
     // Adm1

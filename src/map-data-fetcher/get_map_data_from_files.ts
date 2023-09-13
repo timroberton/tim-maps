@@ -27,7 +27,8 @@ export function getMapDataFromFiles<FacValue, FacType, Adm1Value, Adm2Value>(
             ? {
                 pixNearestFacNumber: mapFiles.facs.facLinks.nearest_int16,
                 pixNearestFacDistance: mapFiles.facs.facLinks.distance_float32,
-                nNearestVals: mapFiles.dataPackage.facilitiesInfo.nNearestVals,
+                strideNearestFacs:
+                  mapFiles.dataPackage.facilitiesInfo.strideNearestFacs,
               }
             : undefined,
         }

@@ -127,18 +127,18 @@ export async function makeFacBinFilesForSubFolder(
   });
 
   const specifiedFacTypes = meta.facilities.specifiedFacTypes?.include ?? [];
-  const nNearestVals = 1 + specifiedFacTypes.length;
+  const strideNearestFacs = 1 + specifiedFacTypes.length;
 
-  const nearestBinData = new Int16Array(popData.length * nNearestVals);
-  const distanceBinData = new Float32Array(popData.length * nNearestVals);
+  const nearestBinData = new Int16Array(popData.length * strideNearestFacs);
+  const distanceBinData = new Float32Array(popData.length * strideNearestFacs);
 
   for (let y = 0; y < _H; y++) {
     for (let x = 0; x < _W; x++) {
       const iPix = y * _W + x;
       const popDataValue = popData[iPix];
       if (popDataValue === -9999) {
-        for (let i_f = 0; i_f < nNearestVals; i_f++) {
-          const iForArrs = iPix * nNearestVals + i_f;
+        for (let i_f = 0; i_f < strideNearestFacs; i_f++) {
+          const iForArrs = iPix * strideNearestFacs + i_f;
           nearestBinData[iForArrs] = -9999;
           distanceBinData[iForArrs] = -9999;
         }
@@ -151,8 +151,8 @@ export async function makeFacBinFilesForSubFolder(
         facilitiesInThisRaster,
         specifiedFacTypes
       );
-      for (let i_f = 0; i_f < nNearestVals; i_f++) {
-        const iForArrs = iPix * nNearestVals + i_f;
+      for (let i_f = 0; i_f < strideNearestFacs; i_f++) {
+        const iForArrs = iPix * strideNearestFacs + i_f;
         const f = fs[i_f];
         if (!f) {
           nearestBinData[iForArrs] = -9999;
@@ -188,7 +188,7 @@ export async function makeFacBinFilesForSubFolder(
     nFacilitiesInDataset: facData.length,
     nFacilitiesInPopRaster: facilitiesInThisRaster.length,
     specifiedFacTypes,
-    nNearestVals,
+    strideNearestFacs,
     facilityInfoHasBeenIncluded: !!meta.facilities.facilityInfoVars,
   };
   await Deno.writeTextFile(

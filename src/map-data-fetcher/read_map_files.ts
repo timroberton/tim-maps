@@ -9,6 +9,7 @@ import {
 } from "./util_funcs.ts";
 
 export async function readMapFiles(dir: string): Promise<MapFiles> {
+  console.log("Reading map files from", dir);
   const dataPackage = await readJsonFile<DataPackage>(dir, "data_package.json");
   if (!dataPackage || !dataPackage.files) {
     throw new Error(

@@ -25,14 +25,14 @@ export function getPixelVals<FacValue, FacType, Adm1Value, Adm2Value>(
     | {
         facIndex: number;
         facDistance: number;
-        facValue?: FacValue;
-        facType?: FacType;
+        facValue: FacValue | undefined;
+        facType: FacType | undefined;
       }
     | "nofac"
   )[] = [];
-  for (let i_f = 0; i_f < data.facs.facLinks.nNearestVals; i_f++) {
+  for (let i_f = 0; i_f < data.facs.facLinks.strideNearestFacs; i_f++) {
     const iInNearest: number =
-      iPixInOriginal * data.facs.facLinks.nNearestVals + i_f;
+      iPixInOriginal * data.facs.facLinks.strideNearestFacs + i_f;
     const hasFacNumber =
       data.facs.facLinks.pixNearestFacNumber !== undefined &&
       data.facs.facLinks.pixNearestFacNumber[iInNearest] !== -9999;

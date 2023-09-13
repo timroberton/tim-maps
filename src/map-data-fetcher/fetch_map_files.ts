@@ -12,8 +12,8 @@ export async function fetchMapFiles(
   url: string,
   updateProgress?: (pct: number) => void
 ): Promise<MapFiles> {
+  console.log("Fetching map files from", url);
   updateProgress?.(0.1);
-  console.log(url);
   const dataPackage = await fetchJsonFile<DataPackage>(
     url,
     "data_package.json"
