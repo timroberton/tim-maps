@@ -1,4 +1,4 @@
-import { CanvasRenderingContext2D, chroma } from "./deps.ts";
+import { CanvasRenderingContext2D, type chroma } from "./deps.ts";
 import { PointStyle } from "./types.ts";
 
 const _COSINE_45 = 0.7071067811865476;

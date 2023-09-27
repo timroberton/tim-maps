@@ -47,12 +47,12 @@ export type TimMapResults<
   startingObject: ResutsObject;
   popAccumulator?: (
     currentObject: ResutsObject,
-    pixelVals: PixelVals<FacValue, FacType, Adm1Value>
+    pixelVals: PixelVals<FacValue, FacType, Adm1Value, Adm2Value>
   ) => void;
   facAccumulator?: (
     currentObject: ResutsObject,
     facVals: FacVals<FacValue, FacType>,
-    pixelVals: PixelVals<FacValue, FacType, Adm1Value>
+    pixelVals: PixelVals<FacValue, FacType, Adm1Value, Adm2Value>
   ) => void;
 };
 
@@ -72,13 +72,14 @@ export type RenderMapConfig<
   mapPixelPad?: number;
   validate?: boolean;
   filterPixels?: (
-    pixelVals: PixelVals<FacValue, FacType, Adm1Value>
+    pixelVals: PixelVals<FacValue, FacType, Adm1Value, Adm2Value>
   ) => boolean;
   filterFacs?: (
     facVals: FacVals<FacValue, FacType>,
-    pixelVals: PixelVals<FacValue, FacType, Adm1Value>
+    pixelVals: PixelVals<FacValue, FacType, Adm1Value, Adm2Value>
   ) => boolean;
   //
+  backgroundColor?: string;
   pixelColor?: string;
   pixelTransparency255?: number;
   pointColor?: string;
@@ -86,26 +87,26 @@ export type RenderMapConfig<
   pointRadius?: number;
   pointStrokeWidth?: number;
   getPixelColor?: (
-    pixelVals: PixelVals<FacValue, FacType, Adm1Value>
+    pixelVals: PixelVals<FacValue, FacType, Adm1Value, Adm2Value>
   ) => string;
   getPixelTransparency255?: (
-    pixelVals: PixelVals<FacValue, FacType, Adm1Value>
+    pixelVals: PixelVals<FacValue, FacType, Adm1Value, Adm2Value>
   ) => number;
   getPointColor?: (
     facVals: FacVals<FacValue, FacType>,
-    pixelVals: PixelVals<FacValue, FacType, Adm1Value>
+    pixelVals: PixelVals<FacValue, FacType, Adm1Value, Adm2Value>
   ) => string;
   getPointStyle?: (
     facVals: FacVals<FacValue, FacType>,
-    pixelVals: PixelVals<FacValue, FacType, Adm1Value>
+    pixelVals: PixelVals<FacValue, FacType, Adm1Value, Adm2Value>
   ) => PointStyle;
   getPointRadius?: (
     facVals: FacVals<FacValue, FacType>,
-    pixelVals: PixelVals<FacValue, FacType, Adm1Value>
+    pixelVals: PixelVals<FacValue, FacType, Adm1Value, Adm2Value>
   ) => number;
   getPointStrokeWidth?: (
     facVals: FacVals<FacValue, FacType>,
-    pixelVals: PixelVals<FacValue, FacType, Adm1Value>
+    pixelVals: PixelVals<FacValue, FacType, Adm1Value, Adm2Value>
   ) => number;
   results?: TimMapResults<
     FacValue,
@@ -120,7 +121,7 @@ export type GetResultsConfig = {
   validate?: boolean;
 };
 
-export type PixelVals<FacValue, FacType, Adm1Value> = {
+export type PixelVals<FacValue, FacType, Adm1Value, Adm2Value> = {
   popFloat32?: number;
   // Linked facs
   nearestFacs: (
@@ -135,6 +136,9 @@ export type PixelVals<FacValue, FacType, Adm1Value> = {
   // Adm1
   adm1Index: number | undefined;
   adm1Value: Adm1Value | undefined;
+  // Adm2
+  adm2Index: number | undefined;
+  adm2Value: Adm2Value | undefined;
 };
 
 export type FacVals<FacValue, FacType> = {
@@ -154,4 +158,4 @@ export declare function renderMap<
   chroma: chroma | undefined,
   data: TimMapData<FacValue, FacType, Adm1Value, Adm2Value>,
   config: RenderMapConfig<FacValue, FacType, Adm1Value, Adm2Value, ResutsObject>
-): ResutsObject | undefined;
+): Promise<ResutsObject | undefined>;

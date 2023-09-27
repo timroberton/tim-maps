@@ -135,16 +135,25 @@ function drawTriangle(ctx, x, y, radius, fill, stroke, strokeWidth) {
   ctx.stroke();
 }
 
+// src/map-renderer/deps.ts
+import {
+  ImageData
+} from "https://deno.land/x/skia_canvas@0.5.4/mod.ts";
+
 // src/map-renderer/get_pixel_vals.ts
 function getPixelVals(data, iPixInOriginal) {
   const hasAdm1Number = data.adm1 && data.adm1.pixAdm1Number[iPixInOriginal] !== 0;
   const adm1Index = hasAdm1Number ? data.adm1.pixAdm1Number[iPixInOriginal] - 1 : void 0;
+  const hasAdm2Number = data.adm2 && data.adm2.pixAdm2Number[iPixInOriginal] !== 0;
+  const adm2Index = hasAdm2Number ? data.adm2.pixAdm2Number[iPixInOriginal] - 1 : void 0;
   if (!data.facs || !data.facs.facLinks) {
     return {
       popFloat32: data.pixPopFloat32?.[iPixInOriginal],
       adm1Index,
+      adm2Index,
       nearestFacs: [],
-      adm1Value: adm1Index !== void 0 ? data.adm1?.adm1Values?.[adm1Index] : void 0
+      adm1Value: adm1Index !== void 0 ? data.adm1?.adm1Values?.[adm1Index] : void 0,
+      adm2Value: adm2Index !== void 0 ? data.adm2?.adm2Values?.[adm2Index] : void 0
     };
   }
   const nearestFacs = [];
@@ -169,26 +178,28 @@ function getPixelVals(data, iPixInOriginal) {
     nearestFacs,
     // Adm 1
     adm1Index,
-    adm1Value: adm1Index !== void 0 ? data.adm1?.adm1Values?.[adm1Index] : void 0
+    adm1Value: adm1Index !== void 0 ? data.adm1?.adm1Values?.[adm1Index] : void 0,
+    // Adm 2
+    adm2Index,
+    adm2Value: adm2Index !== void 0 ? data.adm2?.adm2Values?.[adm2Index] : void 0
   };
 }
 
 // src/map-renderer/render_map.ts
-function renderMap(canvas, chroma, data, config) {
+async function renderMap(canvas, chroma, data, config) {
   const nFacilities = (data.facs?.facLocations.length ?? 0) / 2;
-  const pixelPad = config.mapPixelPad ?? 0;
-  const croppedPixelX = config.crop?.x ?? 0;
-  const croppedPixelY = config.crop?.y ?? 0;
-  const croppedPixelW = config.crop?.w ?? data.pixW;
-  const croppedPixelH = config.crop?.h ?? data.pixH;
-  let ctx;
-  let imageData;
+  const pixelPad = Math.round(config.mapPixelPad ?? 0);
+  const croppedPixelX = Math.round(config.crop?.x ?? 0);
+  const croppedPixelY = Math.round(config.crop?.y ?? 0);
+  const croppedPixelW = Math.round(config.crop?.w ?? data.pixW);
+  const croppedPixelH = Math.round(config.crop?.h ?? data.pixH);
+  const imageData = new ImageData(croppedPixelW, croppedPixelH);
+  let ctx = null;
   if (canvas) {
-    ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    imageData = ctx.createImageData(croppedPixelW, croppedPixelH);
     canvas.width = Math.round(croppedPixelW + 2 * pixelPad);
     canvas.height = Math.round(croppedPixelH + 2 * pixelPad);
+    ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
   const nCroppedPixels = croppedPixelW * croppedPixelH;
   const colorMap = {};
@@ -215,22 +226,26 @@ function renderMap(canvas, chroma, data, config) {
         }
         let minFacNumber = nFacilities + 1;
         let maxFacNumber = -1;
+        let atLeastOneNearestFacility = false;
         data.facs.facLinks.pixNearestFacNumber.forEach((v) => {
           if (v === -9999) {
             return;
           }
           minFacNumber = Math.min(v, minFacNumber);
           maxFacNumber = Math.max(v, maxFacNumber);
+          atLeastOneNearestFacility = true;
         });
-        if (minFacNumber < 1 || minFacNumber > nFacilities) {
-          throw new Error(
-            `Bad nearest fac number - min is ${minFacNumber} but there are ${nFacilities} facilities`
-          );
-        }
-        if (maxFacNumber < 1 || maxFacNumber > nFacilities) {
-          throw new Error(
-            `Bad nearest fac number - max is ${maxFacNumber} but there are ${nFacilities} facilities`
-          );
+        if (atLeastOneNearestFacility) {
+          if (minFacNumber < 1 || minFacNumber > nFacilities) {
+            throw new Error(
+              `Bad nearest fac number - min is ${minFacNumber} but there are ${nFacilities} facilities`
+            );
+          }
+          if (maxFacNumber < 1 || maxFacNumber > nFacilities) {
+            throw new Error(
+              `Bad nearest fac number - max is ${maxFacNumber} but there are ${nFacilities} facilities`
+            );
+          }
         }
       }
     }
@@ -269,18 +284,15 @@ function renderMap(canvas, chroma, data, config) {
       if (data.pixPopUint8[iPixInOriginal] === 255) {
         continue;
       }
-      const vals = getPixelVals(
-        data,
-        iPixInOriginal
-      );
+      const vals = getPixelVals(data, iPixInOriginal);
       if (config.filterPixels && !config.filterPixels(vals)) {
         continue;
       }
       config.results?.popAccumulator?.(resultsObject, vals);
-      if (imageData) {
+      if (canvas && ctx) {
         const color = config.getPixelColor?.(vals) ?? config.pixelColor ?? "#000000";
         const transparency = config.getPixelTransparency255?.(vals) ?? config.pixelTransparency255 ?? data.pixPopUint8[iPixInOriginal];
-        if (!color || transparency === void 0) {
+        if (!color || transparency === void 0 || transparency % 1 !== 0) {
           throw new Error("What" + JSON.stringify(vals));
         }
         if (!colorMap[color]) {
@@ -294,7 +306,7 @@ function renderMap(canvas, chroma, data, config) {
       }
     }
   }
-  if (imageData && ctx) {
+  if (canvas && ctx) {
     ctx.putImageData(imageData, pixelPad, pixelPad);
   }
   if (data.facs) {
@@ -308,10 +320,7 @@ function renderMap(canvas, chroma, data, config) {
         continue;
       }
       const iPixInOriginal = facX + facY * data.pixW;
-      const pixelVals = getPixelVals(
-        data,
-        iPixInOriginal
-      );
+      const pixelVals = getPixelVals(data, iPixInOriginal);
       const facVals = {
         facValue: data.facs.facValues?.[iFac],
         facType: data.facs.facTypes?.[iFac]
@@ -320,7 +329,7 @@ function renderMap(canvas, chroma, data, config) {
         continue;
       }
       config.results?.facAccumulator?.(resultsObject, facVals, pixelVals);
-      if (ctx) {
+      if (canvas && ctx) {
         addPoint(
           ctx,
           config.getPointStyle?.(facVals, pixelVals) ?? config.pointStyle ?? "circle",
@@ -333,6 +342,11 @@ function renderMap(canvas, chroma, data, config) {
         );
       }
     }
+  }
+  if (config.backgroundColor && canvas && ctx) {
+    ctx.globalCompositeOperation = "destination-over";
+    ctx.fillStyle = config.backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
   return resultsObject;
 }

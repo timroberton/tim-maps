@@ -1,9 +1,14 @@
 import { addPoint } from "./add_points.ts";
-import type { Canvas, chroma } from "./deps.ts";
+import {
+  ImageData,
+  type Canvas,
+  type chroma,
+  CanvasRenderingContext2D,
+} from "./deps.ts";
 import { getPixelVals } from "./get_pixel_vals.ts";
 import { FacVals, PixelVals, RenderMapConfig, TimMapData } from "./types.ts";
 
-export function renderMap<
+export async function renderMap<
   FacValue,
   FacType,
   Adm1Value,
@@ -14,23 +19,22 @@ export function renderMap<
   chroma: chroma | undefined,
   data: TimMapData<FacValue, FacType, Adm1Value, Adm2Value>,
   config: RenderMapConfig<FacValue, FacType, Adm1Value, Adm2Value, ResutsObject>
-): ResutsObject | undefined {
+): Promise<ResutsObject | undefined> {
   const nFacilities = (data.facs?.facLocations.length ?? 0) / 2;
-  const pixelPad = config.mapPixelPad ?? 0;
-  const croppedPixelX = config.crop?.x ?? 0;
-  const croppedPixelY = config.crop?.y ?? 0;
-  const croppedPixelW = config.crop?.w ?? data.pixW;
-  const croppedPixelH = config.crop?.h ?? data.pixH;
+  const pixelPad = Math.round(config.mapPixelPad ?? 0);
+  const croppedPixelX = Math.round(config.crop?.x ?? 0);
+  const croppedPixelY = Math.round(config.crop?.y ?? 0);
+  const croppedPixelW = Math.round(config.crop?.w ?? data.pixW);
+  const croppedPixelH = Math.round(config.crop?.h ?? data.pixH);
 
-  let ctx;
-  let imageData;
+  const imageData = new ImageData(croppedPixelW, croppedPixelH);
 
+  let ctx = null as CanvasRenderingContext2D | null;
   if (canvas) {
+    canvas.width = Math.round(croppedPixelW + 2 * pixelPad); // These operations must come first before getting canvas!
+    canvas.height = Math.round(croppedPixelH + 2 * pixelPad); // These operations must come first before getting canvas!
     ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    imageData = ctx.createImageData(croppedPixelW, croppedPixelH);
-    canvas.width = Math.round(croppedPixelW + 2 * pixelPad);
-    canvas.height = Math.round(croppedPixelH + 2 * pixelPad);
   }
 
   const nCroppedPixels = croppedPixelW * croppedPixelH;
@@ -71,22 +75,26 @@ export function renderMap<
         }
         let minFacNumber = nFacilities + 1;
         let maxFacNumber = -1;
+        let atLeastOneNearestFacility = false;
         data.facs.facLinks.pixNearestFacNumber.forEach((v) => {
           if (v === -9999) {
             return;
           }
           minFacNumber = Math.min(v, minFacNumber);
           maxFacNumber = Math.max(v, maxFacNumber);
+          atLeastOneNearestFacility = true;
         });
-        if (minFacNumber < 1 || minFacNumber > nFacilities) {
-          throw new Error(
-            `Bad nearest fac number - min is ${minFacNumber} but there are ${nFacilities} facilities`
-          );
-        }
-        if (maxFacNumber < 1 || maxFacNumber > nFacilities) {
-          throw new Error(
-            `Bad nearest fac number - max is ${maxFacNumber} but there are ${nFacilities} facilities`
-          );
+        if (atLeastOneNearestFacility) {
+          if (minFacNumber < 1 || minFacNumber > nFacilities) {
+            throw new Error(
+              `Bad nearest fac number - min is ${minFacNumber} but there are ${nFacilities} facilities`
+            );
+          }
+          if (maxFacNumber < 1 || maxFacNumber > nFacilities) {
+            throw new Error(
+              `Bad nearest fac number - max is ${maxFacNumber} but there are ${nFacilities} facilities`
+            );
+          }
         }
       }
     }
@@ -129,22 +137,20 @@ export function renderMap<
       if (data.pixPopUint8[iPixInOriginal] === 255) {
         continue;
       }
-      const vals: PixelVals<FacValue, FacType, Adm1Value> = getPixelVals(
-        data,
-        iPixInOriginal
-      );
+      const vals: PixelVals<FacValue, FacType, Adm1Value, Adm2Value> =
+        getPixelVals(data, iPixInOriginal);
       if (config.filterPixels && !config.filterPixels(vals)) {
         continue;
       }
       config.results?.popAccumulator?.(resultsObject, vals);
-      if (imageData) {
+      if (canvas && ctx) {
         const color =
           config.getPixelColor?.(vals) ?? config.pixelColor ?? "#000000";
         const transparency =
           config.getPixelTransparency255?.(vals) ??
           config.pixelTransparency255 ??
           data.pixPopUint8[iPixInOriginal];
-        if (!color || transparency === undefined) {
+        if (!color || transparency === undefined || transparency % 1 !== 0) {
           throw new Error("What" + JSON.stringify(vals));
         }
         if (!colorMap[color]) {
@@ -159,7 +165,7 @@ export function renderMap<
     }
   }
 
-  if (imageData && ctx) {
+  if (canvas && ctx) {
     ctx.putImageData(imageData, pixelPad, pixelPad);
   }
 
@@ -179,10 +185,8 @@ export function renderMap<
         continue;
       }
       const iPixInOriginal = facX + facY * data.pixW;
-      const pixelVals: PixelVals<FacValue, FacType, Adm1Value> = getPixelVals(
-        data,
-        iPixInOriginal
-      );
+      const pixelVals: PixelVals<FacValue, FacType, Adm1Value, Adm2Value> =
+        getPixelVals(data, iPixInOriginal);
       const facVals: FacVals<FacValue, FacType> = {
         facValue: data.facs.facValues?.[iFac],
         facType: data.facs.facTypes?.[iFac],
@@ -191,7 +195,7 @@ export function renderMap<
         continue;
       }
       config.results?.facAccumulator?.(resultsObject, facVals, pixelVals);
-      if (ctx) {
+      if (canvas && ctx) {
         addPoint(
           ctx,
           config.getPointStyle?.(facVals, pixelVals) ??
@@ -210,6 +214,12 @@ export function renderMap<
         );
       }
     }
+  }
+
+  if (config.backgroundColor && canvas && ctx) {
+    ctx.globalCompositeOperation = "destination-over";
+    ctx.fillStyle = config.backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
   return resultsObject;
