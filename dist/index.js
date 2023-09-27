@@ -2,7 +2,7 @@
 var _COSINE_45 = 0.7071067811865476;
 var _SINE_60 = 0.8660254037844386;
 var _COSINE_60 = 0.5;
-function addPoint(ctx, pointStyle, x, y, radius, color, strokeWidth, chroma) {
+function addPoint(ctx, pointStyle, x, y, radius, color, strokeWidth, chroma2) {
   switch (pointStyle) {
     case "circle":
       drawCircle(
@@ -10,7 +10,7 @@ function addPoint(ctx, pointStyle, x, y, radius, color, strokeWidth, chroma) {
         x,
         y,
         radius,
-        chroma(color).alpha(0.3).css(),
+        chroma2(color).alpha(0.3).css(),
         color,
         strokeWidth
       );
@@ -24,7 +24,7 @@ function addPoint(ctx, pointStyle, x, y, radius, color, strokeWidth, chroma) {
         x,
         y,
         radius,
-        chroma(color).alpha(0.3).css(),
+        chroma2(color).alpha(0.3).css(),
         color,
         strokeWidth
       );
@@ -38,7 +38,7 @@ function addPoint(ctx, pointStyle, x, y, radius, color, strokeWidth, chroma) {
         x,
         y,
         radius,
-        chroma(color).alpha(0.3).css(),
+        chroma2(color).alpha(0.3).css(),
         color,
         strokeWidth
       );
@@ -49,7 +49,7 @@ function addPoint(ctx, pointStyle, x, y, radius, color, strokeWidth, chroma) {
         x,
         y,
         radius,
-        chroma(color).alpha(0.3).css(),
+        chroma2(color).alpha(0.3).css(),
         color,
         strokeWidth
       );
@@ -186,7 +186,7 @@ function getPixelVals(data, iPixInOriginal) {
 }
 
 // src/map-renderer/render_map.ts
-async function renderMap(canvas, chroma, data, config) {
+async function renderMap(canvas, chroma2, data, config) {
   const nFacilities = (data.facs?.facLocations.length ?? 0) / 2;
   const pixelPad = Math.round(config.mapPixelPad ?? 0);
   const croppedPixelX = Math.round(config.crop?.x ?? 0);
@@ -296,7 +296,7 @@ async function renderMap(canvas, chroma, data, config) {
           throw new Error("What" + JSON.stringify(vals));
         }
         if (!colorMap[color]) {
-          colorMap[color] = chroma(color).rgba();
+          colorMap[color] = chroma2(color).rgba();
         }
         const iImgData = iPixInSmallerCroppedImage * 4;
         imageData.data[iImgData + 0] = colorMap[color][0];
@@ -338,7 +338,7 @@ async function renderMap(canvas, chroma, data, config) {
           config.getPointRadius?.(facVals, pixelVals) ?? config.pointRadius ?? 10,
           config.getPointColor?.(facVals, pixelVals) ?? config.pointColor ?? "#000000",
           config.pointStrokeWidth ?? 3,
-          chroma
+          chroma2
         );
       }
     }

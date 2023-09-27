@@ -2,7 +2,7 @@ import { addPoint } from "./add_points.ts";
 import {
   ImageData,
   type Canvas,
-  type chroma,
+  chroma,
   CanvasRenderingContext2D,
 } from "./deps.ts";
 import { getPixelVals } from "./get_pixel_vals.ts";
