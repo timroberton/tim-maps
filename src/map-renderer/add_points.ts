@@ -1,4 +1,4 @@
-import { CanvasRenderingContext2D, chroma } from "./deps.ts";
+import { CanvasRenderingContext2D, ChromaStatic } from "./deps.ts";
 import { PointStyle } from "./types.ts";
 
 const _COSINE_45 = 0.7071067811865476;
@@ -24,7 +24,7 @@ export function addPoint(
   radius: number,
   color: string,
   strokeWidth: number,
-  chroma: chroma
+  chroma: ChromaStatic
 ) {
   switch (pointStyle) {
     case "circle":

@@ -1,9 +1,9 @@
 import { addPoint } from "./add_points.ts";
 import {
+  CanvasRenderingContext2D,
   ImageData,
   type Canvas,
-  chroma,
-  CanvasRenderingContext2D,
+  ChromaStatic,
 } from "./deps.ts";
 import { getPixelVals } from "./get_pixel_vals.ts";
 import { FacVals, PixelVals, RenderMapConfig, TimMapData } from "./types.ts";
@@ -16,7 +16,7 @@ export async function renderMap<
   ResutsObject
 >(
   canvas: Canvas | undefined,
-  chroma: chroma | undefined,
+  chroma: ChromaStatic | undefined,
   data: TimMapData<FacValue, FacType, Adm1Value, Adm2Value>,
   config: RenderMapConfig<FacValue, FacType, Adm1Value, Adm2Value, ResutsObject>
 ): Promise<ResutsObject | undefined> {
@@ -38,7 +38,7 @@ export async function renderMap<
   }
 
   const nCroppedPixels = croppedPixelW * croppedPixelH;
-  const colorMap: Record<string, [number, number, number]> = {};
+  const colorMap: Record<string, [number, number, number, number]> = {};
   const resultsObject: ResutsObject = structuredClone(
     config.results?.startingObject ?? {}
   );
@@ -153,7 +153,7 @@ export async function renderMap<
         if (!color || transparency === undefined || transparency % 1 !== 0) {
           throw new Error("What" + JSON.stringify(vals));
         }
-        if (!colorMap[color]) {
+        if (!colorMap[color] && chroma) {
           colorMap[color] = chroma(color).rgba();
         }
         const iImgData = iPixInSmallerCroppedImage * 4;
@@ -195,7 +195,7 @@ export async function renderMap<
         continue;
       }
       config.results?.facAccumulator?.(resultsObject, facVals, pixelVals);
-      if (canvas && ctx) {
+      if (canvas && ctx && chroma) {
         addPoint(
           ctx,
           config.getPointStyle?.(facVals, pixelVals) ??
