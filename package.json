@@ -1,4 +1,5 @@
 {
   "type": "module",
-  "main": "./dist/index.js"
+  "main": "./dist/index.js",
+  "name": "tim-maps"
 }
